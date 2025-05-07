@@ -1,7 +1,7 @@
-import InputField from "../components/InputField";
-import AuthWrapper from "../components/AuthWrapper";
+import InputField from "../Components/InputField.jsx";
+import AuthWrapper from "../Components/AuthWrapper.jsx";
 import Navbar from "../Components/Navbar.jsx";
-import AuthBackground from "../Components/AuthBackground";
+import AuthBackground from "../Components/AuthBackground.jsx";
 import {Link} from "react-router-dom";
 
 const Login = () => {
