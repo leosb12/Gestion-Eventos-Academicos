@@ -1,8 +1,8 @@
-
+import {NavLink} from "react-router-dom";
 
 const Navbar = () => {
     return (
-        <nav className="navbar bg-primary navbar-expand-lg navbar-dark p-2" data-bs-theme="light">
+        <nav className="navbar bg-primary navbar-expand-lg navbar-dark p-2">
             <div className="container">
                 <a className="navbar-brand d-flex align-items-center" href="#">
                     <img src="/logo.png" alt="Logo" width="34" height="28" className="d-inline-block align-text-top me-2" />
@@ -16,10 +16,20 @@ const Navbar = () => {
                 <div className="collapse navbar-collapse" id="navbarSupportedContent">
                     <ul className="navbar-nav me-auto mb-2 mb-lg-0">
                         <li className="nav-item">
-                            <a className="nav-link active fs-5" aria-current="page" href="#">Inicio</a>
+                            <NavLink
+                                to="/"
+                                className={({ isActive }) => `nav-link fs-5 ${isActive ? "active fw-bold" : ""}`}
+                            >
+                                Inicio
+                            </NavLink>
                         </li>
                         <li className="nav-item">
-                            <a className="nav-link fs-5" href="#">Perfil</a>
+                            <NavLink
+                                to="/iniciar-sesion"
+                                className={({ isActive }) => `nav-link fs-5 ${isActive ? "active fw-bold" : ""}`}
+                            >
+                                Perfil
+                            </NavLink>
                         </li>
                         <li className="nav-item dropdown">
                             <a className="nav-link dropdown-toggle fs-5" href="#" role="button" data-bs-toggle="dropdown"
@@ -35,7 +45,14 @@ const Navbar = () => {
                                 <li>
                                     <hr className="dropdown-divider"/>
                                 </li>
-                                <li><a className="dropdown-item" href="#">Crear Evento</a></li>
+                                <li>
+                                    <NavLink
+                                        to="/crear-evento"
+                                        className={({ isActive }) => `dropdown-item ${isActive ? "active fw-bold" : ""}`}
+                                    >
+                                        Crear Evento
+                                    </NavLink>
+                                </li>
                             </ul>
                         </li>
                     </ul>
