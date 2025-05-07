@@ -1,17 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
-
-body {
-    font-family: 'Montserrat', sans-serif;
-    overflow-x: hidden;
+:root {
+  font-family: 'Montserrat', sans-serif;
 }
 
-body#bodylogin {
-    background-image: url('public/ficct.jpg');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-    background-repeat: no-repeat;
-    min-height: 100vh;
-    margin: 0;
-    padding: 0;
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
 }
