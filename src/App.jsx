@@ -1,22 +1,18 @@
-import React from 'react'
-import './App.css';
+import {useState} from "react";
+import Navbar from "./Components/Navbar.jsx";
+import Carousel from "./Components/Carousel.jsx";
+import TypewriterComponent from "./Components/TypewriterComponent.jsx";
+import Events from "./Components/Events.jsx";
 import './index.css'
-import {BrowserRouter, Route, Routes} from "react-router-dom";
-import Home from "./pages/Home.jsx";
-import Login from "./pages/Login.jsx";
-import Register from "./pages/Register.jsx";
-import CrearEvento from "./pages/CrearEvento.jsx";
 
 const App = () => {
     return (
-        <BrowserRouter>
-            <Routes>
-                <Route path="/" element={<Home/>}/>
-                <Route path="/iniciar-sesion" element={<Login/>}/>
-                <Route path="/registro" element={<Register/>}/>
-                <Route path="/crear-evento" element={<CrearEvento/>}/>
-            </Routes>
-        </BrowserRouter>
+    <div>
+            <Navbar/>
+            <Carousel/>
+            <TypewriterComponent/>
+            <Events/>
+    </div>
     )
 }
 
