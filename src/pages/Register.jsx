@@ -94,7 +94,7 @@ const Register = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   className="form-control form-control-lg"
                   type="email"
-                  placeholder="Ingrese su email"
+                  placeholder="Ingrese su correo"
               />
             </div>
             <div className="mb-3">
