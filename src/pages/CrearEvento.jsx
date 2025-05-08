@@ -1,9 +1,8 @@
 import React from 'react';
-import Navbar from "../Components/Navbar.jsx";
-import AuthBackground from "../Components/AuthBackground.jsx";
-import InputField from "../Components/InputField.jsx";
+import Navbar from "../components/Navbar.jsx";
+import AuthBackground from "../components/AuthBackground.jsx";
 import {Link} from "react-router-dom";
-import EventWrapper from "../Components/EventWrapper.jsx";
+import EventWrapper from "../components/EventWrapper.jsx";
 
 const CrearEvento = () => {
     return (
@@ -12,7 +11,15 @@ const CrearEvento = () => {
             <AuthBackground>
                 <EventWrapper title="CREAR EVENTO">
                     <form>
-                        <InputField label="Nombre del Evento:" placeholder="Digite el Nombre"/>
+                        <div>
+                            <label className="form-label fs-5 fw-semibold">Registro:</label>
+                                  <input
+                                     // onChange={(e) => setEmail(e.target.value)}
+                                      className="form-control form-control-lg"
+                                      type="email"
+                                      placeholder="Ingrese su registro"
+                                  />
+                        </div>
                         <div className="mb-3">
                             <label className="form-label fs-5 fw-semibold">Descripción del Evento:</label>
                             <textarea
