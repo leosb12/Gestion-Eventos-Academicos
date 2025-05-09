@@ -6,9 +6,11 @@ import {useState} from "react";
 import {UserAuth} from "../context/AuthContext.jsx";
 import {toast, ToastContainer} from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
+import supabase from "../utils/supabaseClient.js";
+import {getCorreoCache, setCorreoCache} from "../utils/cacheUser.js";
 
 const Login = () => {
-  const [email, setEmail] = useState("");
+  const [register, setRegister] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -20,10 +22,39 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     try{
+      if (!register || !password) {
+        toast.error("Por favor, rellena todos los campos.");
+        return;
+      }
+      const registerToInteger= Number(register);
+
+      if (isNaN(registerToInteger) || !Number.isInteger(registerToInteger) || registerToInteger < 0) {
+        toast.error("Por favor, ingresa un número de registro válido.");
+        return;
+      }
+
+      let email = getCorreoCache(registerToInteger);
+
+      if (!email) {
+          const { data, error } = await supabase
+            .from('usuario')
+            .select('correo')
+            .eq('id', registerToInteger)
+            .maybeSingle();
+
+          if (error || !data) {
+              toast.error("Registro no encontrado");
+              return {success: false, error: error}
+          }
+
+          email = data.correo;
+          setCorreoCache(registerToInteger, email);
+      }
+
       const result = await signInUser(email, password);
 
       if (result.success) {
-        navigate("/dashboard");
+          navigate("/dashboard");
       }
     } catch (error) {
       toast.error("Ha ocurrido un error" + error.message)
@@ -41,9 +72,9 @@ const Login = () => {
             <div className="mb-3">
               <label className="form-label fs-5 fw-semibold">Registro:</label>
               <input
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => setRegister(e.target.value)}
                   className="form-control form-control-lg"
-                  type="email"
+                  type="text"
                   placeholder="Ingrese su registro"
               />
             </div>
@@ -71,7 +102,7 @@ const Login = () => {
           </form>
         </AuthWrapper>
     </AuthBackground>
-    <ToastContainer position="top-right" closeButton={false} hideProgressBar={true} autoClose={3000}/>
+    <ToastContainer position="top-right" closeButton={false} hideProgressBar={true} limit={1} autoClose={3000}/>
   </>
   );
 };

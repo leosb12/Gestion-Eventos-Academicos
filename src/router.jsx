@@ -5,11 +5,12 @@ import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
 import "./index.css"
 import Dashboard from "./pages/Dashboard.jsx";
+import PrivateRoute from "./components/PrivateRoute.jsx";
 
 export const router =  createBrowserRouter([
     {path:"/",element: <App />},
     {path:"/iniciar-sesion",element: <Login />},
     {path:"/registro",element: <Register />},
     {path:"/crear-evento",element: <CrearEvento />},
-    {path:"/dashboard",element: <Dashboard />},
+    {path:"/dashboard",element: <PrivateRoute><Dashboard /></PrivateRoute>},
 ])

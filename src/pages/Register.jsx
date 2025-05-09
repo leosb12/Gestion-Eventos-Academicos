@@ -33,7 +33,7 @@ const Register = () => {
           error: userError
         } = await supabase.auth.getUser();
 
-        if (userError) throw userError;
+        if (userError) throw toast.error(userError.message);
 
         const { error: insertError } = await supabase.from("usuario").insert({
           id: register,
@@ -46,7 +46,7 @@ const Register = () => {
         if (insertError) {
           throw insertError;
         }
-        navigate("/dashboard");
+        navigate("/iniciar-sesion");
       }
     } catch (error) {
       toast.error("Ha ocurrido un error")
