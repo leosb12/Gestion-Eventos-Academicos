@@ -1,6 +1,6 @@
 import Navbar from "../components/Navbar.jsx";
 import AuthBackground from "../components/AuthBackground.jsx";
-import AuthWrapper from "../components/AuthWrapper.jsx";
+import Wrapper from "../components/Wrapper.jsx";
 import {Link, useNavigate} from "react-router-dom";
 import {useState} from "react";
 import {UserAuth} from "../context/AuthContext.jsx";
@@ -59,7 +59,7 @@ const Register = () => {
      <>
     <Navbar/>
     <AuthBackground>
-        <AuthWrapper title="REGISTRO">
+        <Wrapper title="REGISTRO">
           <form onSubmit={handleSignup}>
             <div>
             <label className="form-label fs-5 fw-semibold">Nombre:</label>
@@ -118,7 +118,7 @@ const Register = () => {
               </Link>
             </div>
           </form>
-        </AuthWrapper>
+        </Wrapper>
     </AuthBackground>
     <ToastContainer position="top-right" closeButton={false} hideProgressBar={true}  autoClose={3000}/>
   </>

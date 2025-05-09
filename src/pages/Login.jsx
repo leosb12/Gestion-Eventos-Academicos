@@ -1,4 +1,4 @@
-import AuthWrapper from "../components/AuthWrapper.jsx";
+import Wrapper from "../components/Wrapper.jsx";
 import Navbar from "../components/Navbar.jsx";
 import AuthBackground from "../components/AuthBackground.jsx";
 import {Link, useNavigate} from "react-router-dom";
@@ -67,7 +67,7 @@ const Login = () => {
   <>
     <Navbar/>
     <AuthBackground>
-        <AuthWrapper title="INICIA SESIÓN">
+        <Wrapper title="INICIA SESIÓN">
           <form onSubmit={handleSignIn}>
             <div className="mb-3">
               <label className="form-label fs-5 fw-semibold">Registro:</label>
@@ -100,7 +100,7 @@ const Login = () => {
               {error && <p className="text-red-600 text-center pt-4">{error.message}</p>}
             </div>
           </form>
-        </AuthWrapper>
+        </Wrapper>
     </AuthBackground>
     <ToastContainer position="top-right" closeButton={false} hideProgressBar={true} limit={1} autoClose={3000}/>
   </>
