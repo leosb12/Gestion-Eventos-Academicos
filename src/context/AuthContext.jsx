@@ -10,17 +10,23 @@ export const AuthContextProvider = ({children}) => {
 
     //registrar
     const signUpNewUser = async (email, password) => {
-        const {data, error} = await supabase.auth.signUp({
-            email: email,
-            password: password
+        try {
+          const { data, error } = await supabase.auth.signUp({
+            email,
+            password
+          });
 
-        });
+          if (error) {
+            toast.error("Hubo un error al registrarse: " + error.message);
+            return { success: false, error: error.message };
+          }
 
-        if(error) {
-            toast.error("Hubo un error al iniciar sesión: "+ error.message);
-            return {success: false, error: error};
+          toast.success("Usuario registrado con éxito.");
+          return { success: true, data };
+        } catch (error) {
+          toast.error("Error inesperado al registrarse: " + error.message);
+          return { success: false, error: error.message };
         }
-        return {success: true, data};
     };
 
     //Login
@@ -31,13 +37,14 @@ export const AuthContextProvider = ({children}) => {
                 password: password
             });
             if (error){
-                toast.error("Ocurrio un error al iniciar sesion: " + error.message);
+                toast.error("Contraseña incorrecta");
                 return {success: false, error: error.message};
             }
             toast.success("Usuario iniciado con exito: "+ data);
             return {success: true, data};
         } catch (error){
             toast.error("Un error ha ocurrido: " + error.message )
+            return {success: false, error: error.message};
         }
     }
 
@@ -53,10 +60,20 @@ export const AuthContextProvider = ({children}) => {
 
     //cerrar sesion
 
-    const signOut = () => {
-        const {error} = supabase.auth.signOut();
-        if (error){
-            toast.error("Ha habido un error: "+ error.message);
+    const signOut = async () => {
+    try {
+          const { error } = await supabase.auth.signOut();
+
+          if (error) {
+            toast.error("Error al cerrar sesión: " + error.message);
+            return { success: false, error: error.message };
+          }
+
+          toast.success("Sesión cerrada con éxito.");
+          return { success: true };
+        } catch (error) {
+          toast.error("Error inesperado al cerrar sesión: " + error.message);
+          return { success: false, error: error.message };
         }
     };
 
