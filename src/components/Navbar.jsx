@@ -1,6 +1,13 @@
-import {NavLink} from "react-router-dom";
+import {NavLink, useLocation} from "react-router-dom";
+import {UserAuth} from "../context/AuthContext.jsx";
+
 
 const Navbar = () => {
+    const {session} = UserAuth();
+    const location = useLocation();
+    const isPerfilActive = ["/dashboard", "/iniciar-sesion"].includes(location.pathname);
+
+
     return (
         <nav className="navbar bg-primary navbar-expand-lg navbar-dark p-2">
             <div className="container">
@@ -23,12 +30,12 @@ const Navbar = () => {
                                 Inicio
                             </NavLink>
                         </li>
-                        <li className="nav-item">
+                        <li>
                             <NavLink
-                                to="/iniciar-sesion"
-                                className={({ isActive }) => `nav-link fs-5 ${isActive ? "active fw-bold" : ""}`}
+                              to={session ? "/dashboard" : "/iniciar-sesion"}
+                                className={`nav-link fs-5 ${isPerfilActive ? "active fw-bold" : ""}`}
                             >
-                                Perfil
+                              Perfil
                             </NavLink>
                         </li>
                         <li className="nav-item dropdown">
