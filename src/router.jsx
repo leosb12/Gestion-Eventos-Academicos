@@ -6,6 +6,7 @@ import Register from "./pages/Register.jsx";
 import "./index.css"
 import Dashboard from "./pages/Dashboard.jsx";
 import PrivateRoute from "./components/PrivateRoute.jsx";
+import NotFound from "./pages/NotFound.jsx";
 
 export const router =  createBrowserRouter([
     {path:"/",element: <App />},
@@ -13,4 +14,5 @@ export const router =  createBrowserRouter([
     {path:"/registro",element: <Register />},
     {path:"/crear-evento",element: <CrearEvento />},
     {path:"/dashboard",element: <PrivateRoute><Dashboard /></PrivateRoute>},
+    {path: "*", element: <NotFound /> },
 ])

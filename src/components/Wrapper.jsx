@@ -1,5 +1,5 @@
 
-const AuthWrapper = ({ children, title }) => {
+const Wrapper = ({ children, title }) => {
   return (
           <div className="bg-white p-4 p-md-5 rounded-5 shadow" style={{ maxWidth: "25rem", width: "100%" }}>
             <div className="d-flex justify-content-center mb-4">
@@ -11,4 +11,4 @@ const AuthWrapper = ({ children, title }) => {
   );
 };
 
-export default AuthWrapper;
+export default Wrapper;
