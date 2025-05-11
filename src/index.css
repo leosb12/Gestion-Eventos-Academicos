@@ -48,3 +48,18 @@
   background-color: #c82333;
   transform: scale(1.05);
 }
+
+.auth-background {
+  background: url('/public/img/ficct.jpg') center/cover fixed no-repeat;
+}
+
+.carousel-inner {
+  max-height: 39rem;
+  min-height: 39rem;
+  object-fit: contain;
+  object-position: center;
+  background-color: rgba(30, 30, 47, 0.8);
+}
+
+
+

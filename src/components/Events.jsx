@@ -3,33 +3,33 @@
 const Events = () => {
     const events = [
           {
-            title: "Taller robótica y manejo empresarial 1-2025",
-            image: "/kiko.jpg",
+            title: "Taller: Diseños y Configuraciones de Redes eKIT para PYMES ",
+            image: "/Conferencia1.jpg",
             link: "#"
           },
           {
-            title: "Taller robótica y manejo empresarial 1-2025",
-            image: "/kiko.jpg",
+            title: "Taller: Manejo y Uso de Drones ",
+            image: "/sopenco.jpg",
             link: "#"
           },
           {
-            title: "Taller robótica y manejo empresarial 1-2025",
-            image: "/kiko.jpg",
+            title: "Conferencia: Ejecutando la IA desde tu PC",
+            image: "/Conferencia2.jpg",
             link: "#"
           },
           {
-            title: "Taller robótica y manejo empresarial 1-2025",
-            image: "/kiko.jpg",
+            title: "Conferencia: Minunux Linux, Sientete Seguro de Usar Linux",
+            image: "/Conferencia3.jpg",
             link: "#"
           },
           {
-            title: "Taller robótica y manejo empresarial 1-2025",
-            image: "/kiko.jpg",
+            title: "Taller: Ensamblado y Soporte de Computadoras ",
+            image: "/Taller1.jpg",
             link: "#"
           },
           {
-            title: "Taller robótica y manejo empresarial 1-2025",
-            image: "/kiko.jpg",
+            title: "Feria Facultativa: Inscripción Semilleros",
+            image: "/Feria1.jpg",
             link: "#"
           }
     ];
