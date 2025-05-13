@@ -25,7 +25,7 @@ const Carousel = () => {
         </div>
         <div className="carousel-item" data-bs-interval="3000">
           <img
-            src="/Imagen%20de%20WhatsApp%202025-04-27%20a%20las%2013.36.12_be9d8d90.jpg"
+            src="/Taller1.jpg"
             className="d-block w-100 carousel-inner"
             alt="kiko3"
           />

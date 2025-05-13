@@ -1,16 +1,15 @@
 // src/context/AuthContext.jsx
-
 import React, { createContext, useEffect, useState, useContext } from "react";
 import supabase from "../utils/supabaseClient.js";
 import { toast } from "react-toastify";
-import 'react-toastify/dist/ReactToastify.css';
+import "react-toastify/dist/ReactToastify.css";
 
 const AuthContext = createContext();
 
 export const AuthContextProvider = ({ children }) => {
   const [session, setSession] = useState(undefined);
 
-  // Registro de usuario
+  // --- REGISTRO ---
   const signUpNewUser = async (email, password) => {
     try {
       const { data, error } = await supabase.auth.signUp({ email, password });
@@ -26,7 +25,7 @@ export const AuthContextProvider = ({ children }) => {
     }
   };
 
-  // Inicio de sesión
+  // --- LOGIN ---
   const signInUser = async (email, password) => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -42,7 +41,7 @@ export const AuthContextProvider = ({ children }) => {
     }
   };
 
-  // Cerrar sesión
+  // --- LOGOUT ---
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -58,42 +57,20 @@ export const AuthContextProvider = ({ children }) => {
     }
   };
 
-  // Mantener la sesión actualizada
+  // --- MONITOREO DE SESIÓN ---
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
+    // Obtiene la sesión al montar
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => setSession(session));
 
+    // Escucha cambios de sesión (login/logout)
     const { data: listener } = supabase.auth.onAuthStateChange((_, session) => {
       setSession(session);
     });
 
     return () => {
       listener.subscription.unsubscribe();
-    };
-  }, []);
-
-  // Mostrar confirmación al cerrar la pestaña y forzar logout
-  useEffect(() => {
-    // Muestra el diálogo genérico de confirmación
-    const handleBeforeUnload = (e) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
-
-    // Si el usuario confirma y se cierra la pestaña, elimina el token de Supabase
-    const handleUnload = () => {
-      // Borra el token de localStorage para forzar logout
-      localStorage.removeItem('supabase.auth.token');
-      // Opcionalmente puedes llamar también a supabase.auth.signOut()
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    window.addEventListener("unload", handleUnload);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      window.removeEventListener("unload", handleUnload);
     };
   }, []);
 
