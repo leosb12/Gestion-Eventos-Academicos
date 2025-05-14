@@ -11,7 +11,7 @@ const TypewriterText = () => {
     });
 
     typewriter
-      .typeString('¡Descubre los próximos EVENTOS de la facultad!')
+      .typeString('¡No te Pierdas los Próximos Eventos de la Facultad!')
       .pauseFor(200)
       .start();
   }, []);
