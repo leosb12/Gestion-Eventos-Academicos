@@ -63,6 +63,49 @@ const Login = () => {
     }
   };
 
+  const handleResetPassword = async () => {
+  if (!register) {
+    toast.error("Primero escribe tu número de registro");
+    return;
+  }
+
+  const registerToInteger = Number(register);
+
+  if (isNaN(registerToInteger) || !Number.isInteger(registerToInteger) || registerToInteger < 0) {
+    toast.error("Registro inválido.");
+    return;
+  }
+
+  let email = getCorreoCache(registerToInteger);
+
+  if (!email) {
+    const { data, error } = await supabase
+      .from("usuario")
+      .select("correo")
+      .eq("id", registerToInteger)
+      .maybeSingle();
+
+    if (error || !data) {
+      toast.error("Registro no encontrado.");
+      return;
+    }
+
+    email = data.correo;
+    setCorreoCache(registerToInteger, email);
+  }
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: "https://notifcct.vercel.app/update-password", // o tu dominio en producción
+  });
+
+  if (error) {
+    toast.error("No se pudo enviar el correo: " + error.message);
+  } else {
+    toast.success("Te enviamos un correo para restablecer tu contraseña.");
+  }
+};
+
+
   return (
   <>
     <Navbar/>
@@ -87,6 +130,18 @@ const Login = () => {
                   placeholder="Ingrese su contraseña"
               />
             </div>
+
+            <div className="mb-3 text-end">
+              <button
+                  type="button"
+                    onClick={handleResetPassword}
+                  className="btn btn-link text-decoration-none text-primary fs-6"
+                    >
+                   ¿Olvidaste tu contraseña?
+                </button>
+                </div>
+
+
             <div className="d-grid mb-3">
               <button disabled={loading} className="btn btn-primary py-2 fs-5" type="submit">
                 Iniciar Sesión
