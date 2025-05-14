@@ -3,7 +3,8 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { UserAuth } from '../context/AuthContext.jsx';
 
 export default function Navbar() {
-  const { session, signOut } = UserAuth();
+  const { session, tipoUsuario, signOut } = UserAuth();
+  const esAdmin = tipoUsuario === 6 || tipoUsuario === 7;
   const location = useLocation();
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
@@ -74,7 +75,7 @@ export default function Navbar() {
                     Ver Eventos
                   </NavLink>
                 </li>
-                {session && (
+                {session && esAdmin && (
                   <>
                     <li><hr className="dropdown-divider" /></li>
                     <li>
