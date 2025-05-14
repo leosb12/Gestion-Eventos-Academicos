@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard.jsx";
 import PrivateRoute from "./components/PrivateRoute.jsx";
 import NotFound from "./pages/NotFound.jsx";
 import MainLayout from "./layouts/MainLayout.jsx";
+import UpdatePassword from "./pages/UpdatePassword.jsx";
 
 export const router =  createBrowserRouter([
   {
@@ -18,7 +19,9 @@ export const router =  createBrowserRouter([
       { path: "iniciar-sesion", element: <Login /> },
       { path: "registro", element: <Register /> },
       { path: "crear-evento", element: <CrearEvento /> },
+      { path: "update-password", element: <UpdatePassword /> },
       { path: "dashboard", element: <PrivateRoute><Dashboard /></PrivateRoute> }
+
     ]
   },
   {
