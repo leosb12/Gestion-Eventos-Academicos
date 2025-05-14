@@ -1,76 +1,125 @@
-import {NavLink, useLocation} from "react-router-dom";
-import {UserAuth} from "../context/AuthContext.jsx";
+import React, { useState } from 'react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { UserAuth } from '../context/AuthContext.jsx';
 
+export default function Navbar() {
+  const { session, signOut } = UserAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [showModal, setShowModal] = useState(false);
 
-const Navbar = () => {
-    const {session} = UserAuth();
-    const location = useLocation();
-    const isPerfilActive = ["/dashboard", "/iniciar-sesion"].includes(location.pathname);
+  const hiddenPaths = ['/iniciar-sesion', '/registro'];
+  if (hiddenPaths.includes(location.pathname)) return null;
 
+  const handleOpenModal = () => {
+    console.log('↪️  Abrir modal');
+    setShowModal(true);
+  };
+  const handleCancel = () => {
+    console.log('↪️  Cancelar modal');
+    setShowModal(false);
+  };
+  const handleConfirmLogout = async () => {
+    console.log('↪️  Confirmar logout');
+    const res = await signOut();
+    console.log('↪️  signOut res:', res);
+    setShowModal(false);
+    navigate('/iniciar-sesion');
+  };
 
-    return (
-        <nav className="navbar bg-primary navbar-expand-lg navbar-dark p-2">
-            <div className="container">
-                <a className="navbar-brand d-flex align-items-center" href="#">
-                    <img src="/logo.png" alt="Logo" width="34" height="28" className="d-inline-block align-text-top me-2" />
-                    <span className="text-light fw-bold fs-3">NotiFicct</span>
-                </a>
-                <button className="navbar-toggler" type="button" data-bs-toggle="collapse"
-                        data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span className="navbar-toggler-icon"></span>
-                </button>
-                <div className="collapse navbar-collapse" id="navbarSupportedContent">
-                    <ul className="navbar-nav me-auto mb-2 mb-lg-0">
-                        <li className="nav-item">
-                            <NavLink
-                                to="/"
-                                className={({ isActive }) => `nav-link fs-5 ${isActive ? "active fw-bold" : ""}`}
-                            >
-                                Inicio
-                            </NavLink>
-                        </li>
-                        <li>
-                            <NavLink
-                              to={session ? "/dashboard" : "/iniciar-sesion"}
-                                className={`nav-link fs-5 ${isPerfilActive ? "active fw-bold" : ""}`}
-                            >
-                              Perfil
-                            </NavLink>
-                        </li>
-                        <li className="nav-item dropdown">
-                            <a className="nav-link dropdown-toggle fs-5" href="#" role="button" data-bs-toggle="dropdown"
-                               aria-expanded="false">
-                               Eventos
-                            </a>
-                            <ul className="dropdown-menu">
-                                <li><a className="dropdown-item" href="#">Conferencia</a></li>
-                                <li><a className="dropdown-item" href="#">Feria Expositiva</a></li>
-                                <li><a className="dropdown-item" href="#">Taller</a></li>
-                                <li><a className="dropdown-item" href="#">Hackaton</a></li>
-                                <li><a className="dropdown-item" href="#">Cursos</a></li>
-                                <li>
-                                    <hr className="dropdown-divider"/>
-                                </li>
-                                <li>
-                                    <NavLink
-                                        to="/crear-evento"
-                                        className={({ isActive }) => `dropdown-item ${isActive ? "active fw-bold" : ""}`}
-                                    >
-                                        Crear Evento
-                                    </NavLink>
-                                </li>
-                            </ul>
-                        </li>
-                    </ul>
-                    <form className="d-flex" role="search">
-                        <input className="form-control me-2" type="search" placeholder="Buscar Evento" aria-label="Search"/>
-                        <button className="btn btn-primary border-light btn-light-outline-sucess" type="submit">Search</button>
-                    </form>
-                </div>
+  return (
+    <>
+      <nav className="navbar navbar-expand-lg navbar-dark bg-primary px-3">
+        <NavLink className="navbar-brand d-flex align-items-center" to="/">
+          <img src="/logo.png" alt="Logo" width="32" height="32" className="me-2" />
+          <span className="fw-bold fs-4">NotiFicct</span>
+        </NavLink>
+        <button
+          className="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+          aria-controls="navbarNav"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span className="navbar-toggler-icon" />
+        </button>
+
+        <div className="collapse navbar-collapse" id="navbarNav">
+          <ul className="navbar-nav me-auto">
+            <li className="nav-item">
+              <NavLink
+                to="/"
+                className={({ isActive }) =>
+                  `nav-link fs-5 ${isActive ? 'active fw-bold' : ''}`
+                }
+              >
+                Inicio
+              </NavLink>
+            </li>
+            <li className="nav-item dropdown">
+              <a
+                className="nav-link dropdown-toggle fs-5"
+                href="#"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                Eventos
+              </a>
+              <ul className="dropdown-menu">
+                <li>
+                  <NavLink to="/" className="dropdown-item">
+                    Ver Eventos
+                  </NavLink>
+                </li>
+                {session && (
+                  <>
+                    <li><hr className="dropdown-divider" /></li>
+                    <li>
+                      <NavLink to="/crear-evento" className="dropdown-item">
+                        Crear Evento
+                      </NavLink>
+                    </li>
+                  </>
+                )}
+              </ul>
+            </li>
+          </ul>
+
+          {session && (
+            <button
+              className="btn btn-outline-light"
+              onClick={handleOpenModal}
+            >
+              Cerrar Sesión
+            </button>
+          )}
+        </div>
+      </nav>
+
+      {showModal && (
+        <div className="custom-modal-overlay">
+          <div className="custom-modal-content">
+            <h5 className="mb-3">¿Seguro que quieres cerrar sesión?</h5>
+            <div className="custom-modal-footer">
+              <button
+                className="btn btn-secondary"
+                onClick={handleCancel}
+              >
+                Cancelar
+              </button>
+              <button
+                className="btn btn-danger"
+                onClick={handleConfirmLogout}
+              >
+                Sí, cerrar sesión
+              </button>
             </div>
-        </nav>
-    );
-};
-
-export default Navbar;
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
