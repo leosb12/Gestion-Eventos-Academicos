@@ -10,6 +10,7 @@ import Register     from "./pages/Register.jsx";
 import CrearEvento  from "./pages/CrearEvento.jsx";
 import Dashboard    from "./pages/Dashboard.jsx";
 import NotFound     from "./pages/NotFound.jsx";
+import UpdatePassword from "./pages/UpdatePassword.jsx";
 
 export const router =  createBrowserRouter([
   {
