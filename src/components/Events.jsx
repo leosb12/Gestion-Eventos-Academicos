@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import supabase from '../utils/supabaseClient.js'
 import EventCard from './EventCard.jsx'
+import {toast} from "react-toastify";
 
 const Events = () => {
   const [events, setEvents] = useState([])
@@ -12,19 +13,16 @@ const Events = () => {
   const fetchEvents = async () => {
     const { data, error } = await supabase
       .from('evento')
-      .select('id,nombre,imagen_url')
+        .select('id,nombre')
       .order('fechainicio', { ascending: true })
 
-    if (error) {
-      console.error('Error al cargar eventos:', error)
-    } else {
+    if (!error) {
       setEvents(data)
     }
   }
 
   return (
     <section className="container my-5">
-      <h2 className="text-center mb-4">¡No te Pierdas los Próximos Eventos!</h2>
       <div className="row row-cols-1 row-cols-md-3 g-4">
         {events.map(evt => (
           <EventCard key={evt.id} evento={evt} />

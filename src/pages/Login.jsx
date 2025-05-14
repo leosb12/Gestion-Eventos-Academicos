@@ -66,12 +66,12 @@ const Login = () => {
   };
 
   const handleResetPassword = async () => {
-  if (!register) {
+  if (!registro) {
     toast.error("Primero escribe tu número de registro");
     return;
   }
 
-  const registerToInteger = Number(register);
+  const registerToInteger = Number(registro);
 
   if (isNaN(registerToInteger) || !Number.isInteger(registerToInteger) || registerToInteger < 0) {
     toast.error("Registro inválido.");
