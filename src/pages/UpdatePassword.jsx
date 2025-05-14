@@ -1,55 +1,51 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
-import supabase from "../utils/supabaseClient.js";
-import Wrapper from "../components/Wrapper.jsx";
-import Navbar from "../components/Navbar.jsx";
-import AuthBackground from "../components/AuthBackground.jsx";
+import supabase from "../utils/supabaseClient";
 
-const UpdatePassword = () => {
+export default function UpdatePassword() {
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
   const navigate = useNavigate();
+
+  // Detectar si viene con token en la URL
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (!hash.includes("access_token")) {
+      setMessage("Esta página ya no es válida o el enlace expiró.");
+    }
+  }, []);
 
   const handleUpdatePassword = async (e) => {
     e.preventDefault();
-    setLoading(true);
     const { error } = await supabase.auth.updateUser({ password });
     if (error) {
-      toast.error("Error: " + error.message);
+      setMessage("Hubo un error al actualizar la contraseña.");
     } else {
-      toast.success("Contraseña actualizada correctamente.");
-      navigate("/login");
+      setMessage("✅ Contraseña actualizada con éxito.");
+      setTimeout(() => {
+        navigate("/iniciar-sesion");
+      }, 3000);
     }
-    setLoading(false);
   };
 
   return (
-    <>
-      <Navbar />
-      <AuthBackground>
-        <Wrapper title="Restablecer Contraseña">
-          <form onSubmit={handleUpdatePassword}>
-            <div className="mb-3">
-              <label className="form-label fs-5 fw-semibold">Nueva contraseña:</label>
-              <input
-                type="password"
-                className="form-control form-control-lg"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Ingresa la nueva contraseña"
-              />
-            </div>
-            <div className="d-grid mb-3">
-              <button disabled={loading} className="btn btn-success fs-5" type="submit">
-                Guardar contraseña
-              </button>
-            </div>
-          </form>
-        </Wrapper>
-      </AuthBackground>
-    </>
+    <div className="container py-5">
+      <h2 className="mb-4">Cambiar contraseña</h2>
+      {message && <div className="alert alert-info">{message}</div>}
+      <form onSubmit={handleUpdatePassword}>
+        <input
+          className="form-control form-control-lg mb-3"
+          type="password"
+          placeholder="Nueva contraseña"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+        <button className="btn btn-primary" type="submit">
+          Guardar nueva contraseña
+        </button>
+      </form>
+    </div>
   );
-};
+}
 
-export default UpdatePassword;
