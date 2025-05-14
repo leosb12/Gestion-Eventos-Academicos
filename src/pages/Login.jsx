@@ -95,7 +95,7 @@ const Login = () => {
   }
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: "https://notifcct.vercel.app/update-password", // o tu dominio en producción
+    redirectTo: "https://notificct.vercel.app/update-password", // o tu dominio en producción
   });
 
   if (error) {
