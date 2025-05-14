@@ -4,7 +4,7 @@ const EventCard = ({ evento }) => (
   <div className="col">
     <div className="card h-100 shadow-sm">
         <img
-          src={evento.imagen_url || '/kiko.jpg'}
+          src={evento.imagen_url || '/noDisponible.jpg'}
           className="card-img-top"
           alt={evento.nombre}
           style={{ objectFit: 'cover', height: '200px' }}
