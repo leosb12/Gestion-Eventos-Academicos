@@ -11,6 +11,7 @@ import CrearEvento  from "./pages/CrearEvento.jsx";
 import Dashboard    from "./pages/Dashboard.jsx";
 import NotFound     from "./pages/NotFound.jsx";
 import UpdatePassword from "./pages/UpdatePassword.jsx";
+import DetalleEvento from "./pages/DetalleEvento";
 
 export const router =  createBrowserRouter([
   {
@@ -52,7 +53,10 @@ export const router =  createBrowserRouter([
       {
         path: "update-password",
         element: <UpdatePassword /> },
-
+      {
+        path: "evento/:id",
+        element: <DetalleEvento />
+      }
     ]
   },
   {
