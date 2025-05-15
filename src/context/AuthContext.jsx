@@ -1,4 +1,3 @@
-// src/context/AuthContext.jsx
 import React, { createContext, useEffect, useState, useContext } from "react";
 import supabase from "../utils/supabaseClient.js";
 import { toast } from "react-toastify";
@@ -10,7 +9,6 @@ export const AuthContextProvider = ({ children }) => {
   const [session, setSession] = useState(undefined);
   const [tipoUsuario, setTipoUsuario] = useState(null);
 
-  // --- REGISTRO ---
   const signUpNewUser = async (email, password) => {
     try {
       const { data, error } = await supabase.auth.signUp({ email, password });
@@ -26,7 +24,6 @@ export const AuthContextProvider = ({ children }) => {
     }
   };
 
-  // --- LOGIN ---
   const signInUser = async (email, password) => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -42,7 +39,6 @@ export const AuthContextProvider = ({ children }) => {
     }
   };
 
-  // --- LOGOUT ---
   const signOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -58,45 +54,50 @@ export const AuthContextProvider = ({ children }) => {
     }
   };
 
-  // --- MONITOREO DE SESIÓN ---
   useEffect(() => {
-  const getSessionAndTipoUsuario = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    setSession(session);
+    const getSessionAndTipoUsuario = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
 
-    if (session) {
-      const { data: { user } } = await supabase.auth.getUser();
+      if (session) {
+        const { data: { user } } = await supabase.auth.getUser();
 
-      const { data, error } = await supabase
-        .from('usuario')
-        .select('id_tipo_usuario')
-        .eq('correo', user.email)
-        .maybeSingle();
+        const { data, error } = await supabase
+          .from('usuario')
+          .select('id_tipo_usuario')
+          .eq('correo', user.email)
+          .maybeSingle();
 
-      if (!error && data) {
-        setTipoUsuario(data.id_tipo_usuario);
+        if (!error && data) {
+          setTipoUsuario(data.id_tipo_usuario);
+        } else {
+          setTipoUsuario(null);
+        }
       } else {
         setTipoUsuario(null);
       }
-    } else {
-      setTipoUsuario(null);
-    }
-  };
+    };
 
-  getSessionAndTipoUsuario();
-
-  const { data: listener } = supabase.auth.onAuthStateChange((_, session) => {
-    setSession(session);
     getSessionAndTipoUsuario();
-  });
 
-  return () => {
-    listener.subscription.unsubscribe();
-  };
-}, []);
+    const { data: listener } = supabase.auth.onAuthStateChange((_, session) => {
+      setSession(session);
+      getSessionAndTipoUsuario();
+    });
+
+    return () => {
+      listener.subscription.unsubscribe();
+    };
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ session, tipoUsuario, signUpNewUser, signInUser, signOut }}>
+    <AuthContext.Provider value={{
+      session,
+      tipoUsuario,
+      signUpNewUser,
+      signInUser,
+      signOut
+    }}>
       {children}
     </AuthContext.Provider>
   );
