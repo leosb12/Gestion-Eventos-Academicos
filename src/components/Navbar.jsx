@@ -12,18 +12,10 @@ export default function Navbar() {
   const hiddenPaths = ['/iniciar-sesion', '/registro'];
   if (hiddenPaths.includes(location.pathname)) return null;
 
-  const handleOpenModal = () => {
-    console.log('↪️  Abrir modal');
-    setShowModal(true);
-  };
-  const handleCancel = () => {
-    console.log('↪️  Cancelar modal');
-    setShowModal(false);
-  };
+  const handleOpenModal = () => setShowModal(true);
+  const handleCancel = () => setShowModal(false);
   const handleConfirmLogout = async () => {
-    console.log('↪️  Confirmar logout');
-    const res = await signOut();
-    console.log('↪️  signOut res:', res);
+    await signOut();
     setShowModal(false);
     navigate('/iniciar-sesion');
   };
@@ -35,6 +27,7 @@ export default function Navbar() {
           <img src="/logo.png" alt="Logo" width="32" height="32" className="me-2" />
           <span className="fw-bold fs-4">NotiFicct</span>
         </NavLink>
+
         <button
           className="navbar-toggler"
           type="button"
@@ -48,6 +41,7 @@ export default function Navbar() {
         </button>
 
         <div className="collapse navbar-collapse" id="navbarNav">
+          {/* Menú principal - izquierda */}
           <ul className="navbar-nav me-auto">
             <li className="nav-item">
               <NavLink
@@ -59,6 +53,7 @@ export default function Navbar() {
                 Inicio
               </NavLink>
             </li>
+
             <li className="nav-item dropdown">
               <a
                 className="nav-link dropdown-toggle fs-5"
@@ -89,17 +84,33 @@ export default function Navbar() {
             </li>
           </ul>
 
+          {/* Menú derecho - Perfil y Cerrar Sesión */}
           {session && (
-            <button
-              className="btn btn-outline-light"
-              onClick={handleOpenModal}
-            >
-              Cerrar Sesión
-            </button>
+            <ul className="navbar-nav ms-auto d-flex align-items-center gap-3">
+              <li className="nav-item">
+                <NavLink
+                  to="/perfil"
+                  className={({ isActive }) =>
+                    `nav-link fs-5 ${isActive ? 'active fw-bold text-light' : 'text-light'}`
+                  }
+                >
+                  Perfil
+                </NavLink>
+              </li>
+              <li className="nav-item">
+                <button
+                  className="btn btn-outline-light"
+                  onClick={handleOpenModal}
+                >
+                  Cerrar Sesión
+                </button>
+              </li>
+            </ul>
           )}
         </div>
       </nav>
 
+      {/* Modal de confirmación */}
       {showModal && (
         <div className="custom-modal-overlay">
           <div className="custom-modal-content">

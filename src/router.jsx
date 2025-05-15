@@ -11,6 +11,7 @@ import CrearEvento  from "./pages/CrearEvento.jsx";
 import Dashboard    from "./pages/Dashboard.jsx";
 import NotFound     from "./pages/NotFound.jsx";
 import UpdatePassword from "./pages/UpdatePassword.jsx";
+import Perfil from "./pages/Perfil.jsx";
 
 export const router =  createBrowserRouter([
   {
@@ -52,6 +53,10 @@ export const router =  createBrowserRouter([
       {
         path: "update-password",
         element: <UpdatePassword /> },
+        {
+        path: "/perfil",
+       element: <PrivateRoute><Perfil /></PrivateRoute>
+        },
 
     ]
   },
