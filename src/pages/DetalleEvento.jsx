@@ -66,7 +66,6 @@ const DetalleEvento = () => {
   return (
     <>
       <Navbar />
-
       <div className="container mt-5">
         <div className="mb-4">
           <img

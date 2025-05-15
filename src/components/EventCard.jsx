@@ -10,7 +10,7 @@ const handleClick = () => {
 
 return (
     <div className="col" onClick={handleClick} style={{ cursor: 'pointer' }}>
-      <div className="card h-100 shadow-sm bg-white p-4 rounded-5 text-center">
+      <div className="card h-100 shadow-sm bg-white p-2 rounded-5 text-center">
         <img
           src={evento.imagen_url || '/noDisponible.jpg'}
           className="card-img-top"
