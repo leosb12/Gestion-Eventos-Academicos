@@ -84,10 +84,20 @@ const DetalleEvento = () => {
 
           <div className="col-md-5 d-flex align-items-start justify-content-center">
             <section className="border rounded p-4 w-100 bg-white shadow-sm">
-              <p className="text-center fw-semibold mb-2">Empieza en:</p>
-              <p className="text-center fs-5 mb-4">
-                {new Date(evento.fechainicio).toLocaleDateString()}
-              </p>
+              <div className="row row-cols-1 row-cols-sm-1 row-cols-md-2">
+                <div className= "col">
+                 <p className="text-center fw-semibold mb-2">Empieza en:</p>
+                  <p className="text-center fs-5 mb-4">
+                   {new Date(evento.fechainicio).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className= "col">
+                 <p className="text-center fw-semibold mb-2">Termina en:</p>
+                   <p className="text-center fs-5 mb-4">
+                     {new Date(evento.fechafin).toLocaleDateString()}
+                   </p>
+                </div>
+              </div>
               <div className="d-flex justify-content-center">
                 <button className="btn btn-primary px-4">Inscribirse</button>
               </div>
