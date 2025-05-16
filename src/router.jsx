@@ -12,6 +12,7 @@ import Dashboard    from "./pages/Dashboard.jsx";
 import NotFound     from "./pages/NotFound.jsx";
 import UpdatePassword from "./pages/UpdatePassword.jsx";
 import Perfil from "./pages/Perfil.jsx";
+import DetalleEvento from "./pages/DetalleEvento";
 
 export const router =  createBrowserRouter([
   {
@@ -58,6 +59,10 @@ export const router =  createBrowserRouter([
        element: <PrivateRoute><Perfil /></PrivateRoute>
         },
 
+      {
+        path: "evento/:id",
+        element: <DetalleEvento />
+      }
     ]
   },
   {
