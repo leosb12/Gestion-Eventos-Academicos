@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { UserAuth } from '../context/AuthContext.jsx';
+import BuscadorEventos from './BuscadorEventos.jsx';
 
 export default function Navbar() {
   const { session, tipoUsuario, signOut } = UserAuth();
@@ -41,8 +42,7 @@ export default function Navbar() {
         </button>
 
         <div className="collapse navbar-collapse" id="navbarNav">
-          {/* Menú principal - izquierda */}
-          <ul className="navbar-nav me-auto">
+          <ul className="navbar-nav mb-2 mb-lg-0 w-100">
             <li className="nav-item">
               <NavLink
                 to="/"
@@ -64,7 +64,7 @@ export default function Navbar() {
               >
                 Eventos
               </a>
-              <ul className="dropdown-menu">
+              <ul className="dropdown-menu bg-primary border-0 shadow-none">
                 <li>
                   <NavLink to="/" className="dropdown-item">
                     Ver Eventos
@@ -82,12 +82,9 @@ export default function Navbar() {
                 )}
               </ul>
             </li>
-          </ul>
 
-          {/* Menú derecho - Dropdown de Perfil */}
-          {session && (
-            <ul className="navbar-nav ms-lg-auto ms-0">
-              <li className="nav-item dropdown position-relative">
+            {session && (
+              <li className="nav-item dropdown">
                 <a
                   className="nav-link dropdown-toggle fs-5 text-light"
                   href="#"
@@ -97,19 +94,7 @@ export default function Navbar() {
                 >
                   Perfil
                 </a>
-                <ul
-                  className="dropdown-menu bg-primary border-0 shadow-none"
-                  style={{
-                    minWidth: "160px",
-                    maxWidth: "250px",
-                    whiteSpace: "normal",
-                    wordBreak: "break-word",
-                    position: "absolute",
-                    right: 0,
-                    left: "auto",
-                    zIndex: 1050
-                  }}
-                >
+                <ul className="dropdown-menu bg-primary border-0 shadow-none">
                   <li>
                     <NavLink to="/perfil" className="dropdown-item text-white">
                       Ver Perfil
@@ -126,27 +111,30 @@ export default function Navbar() {
                   </li>
                 </ul>
               </li>
-            </ul>
-          )}
+            )}
+
+            {/* 🔍 Buscador justo después del menú en escritorio */}
+            <li className="nav-item d-none d-lg-block align-self-center">
+              <BuscadorEventos />
+            </li>
+          </ul>
+
+          {/* 🔍 Buscador debajo del menú en móviles */}
+          <div className="w-100 mt-2 d-lg-none">
+            <BuscadorEventos />
+          </div>
         </div>
       </nav>
 
-      {/* Modal de confirmación */}
       {showModal && (
         <div className="custom-modal-overlay">
           <div className="custom-modal-content">
             <h5 className="mb-3">¿Seguro que quieres cerrar sesión?</h5>
             <div className="custom-modal-footer">
-              <button
-                className="btn btn-secondary"
-                onClick={handleCancel}
-              >
+              <button className="btn btn-secondary" onClick={handleCancel}>
                 Cancelar
               </button>
-              <button
-                className="btn btn-danger"
-                onClick={handleConfirmLogout}
-              >
+              <button className="btn btn-danger" onClick={handleConfirmLogout}>
                 Sí, cerrar sesión
               </button>
             </div>
