@@ -8,7 +8,7 @@
 }
 
 .dropdown-item:hover {
-    background-color: #f8f9fa !important;
+    background-color: #0b5ed7 !important;
 }
 
 #menu li > a {
@@ -89,7 +89,4 @@
 body {
   background-color: #f4f6f9;
 }
-
-
-
 

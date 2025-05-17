@@ -88,26 +88,47 @@ export default function Navbar() {
           {/* 🔍 Acá va el buscador minimalista */}
           <BuscadorEventos />
 
-          {/* Menú derecho - Perfil y Cerrar Sesión */}
+          {/* Menú derecho - Dropdown de Perfil */}
           {session && (
-            <ul className="navbar-nav ms-auto d-flex align-items-center gap-3">
-              <li className="nav-item">
-                <NavLink
-                  to="/perfil"
-                  className={({ isActive }) =>
-                    `nav-link fs-5 ${isActive ? 'active fw-bold text-light' : 'text-light'}`
-                  }
+            <ul className="navbar-nav ms-lg-auto ms-0">
+              <li className="nav-item dropdown position-relative">
+                <a
+                  className="nav-link dropdown-toggle fs-5 text-light"
+                  href="#"
+                  role="button"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
                 >
                   Perfil
-                </NavLink>
-              </li>
-              <li className="nav-item">
-                <button
-                  className="btn btn-outline-light"
-                  onClick={handleOpenModal}
+                </a>
+                <ul
+                  className="dropdown-menu bg-primary border-0 shadow-none"
+                  style={{
+                    minWidth: "160px",
+                    maxWidth: "250px",
+                    whiteSpace: "normal",
+                    wordBreak: "break-word",
+                    position: "absolute",
+                    right: 0,
+                    left: "auto",
+                    zIndex: 1050
+                  }}
                 >
-                  Cerrar Sesión
-                </button>
+                  <li>
+                    <NavLink to="/perfil" className="dropdown-item text-white">
+                      Ver Perfil
+                    </NavLink>
+                  </li>
+                  <li>
+                    <button
+                      className="dropdown-item text-white"
+                      onClick={handleOpenModal}
+                      style={{ cursor: "pointer" }}
+                    >
+                      Cerrar Sesión
+                    </button>
+                  </li>
+                </ul>
               </li>
             </ul>
           )}
