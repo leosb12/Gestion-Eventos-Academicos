@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { UserAuth } from '../context/AuthContext.jsx';
+import BuscadorEventos from './BuscadorEventos.jsx'; // ✅ Tu componente separado
 
 export default function Navbar() {
   const { session, tipoUsuario, signOut } = UserAuth();
@@ -22,7 +23,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="navbar navbar-expand-lg navbar-dark bg-primary px-3">
+      <nav className="navbar navbar-expand-lg navbar-dark bg-primary px-3 position-relative">
         <NavLink className="navbar-brand d-flex align-items-center" to="/">
           <img src="/logo.png" alt="Logo" width="32" height="32" className="me-2" />
           <span className="fw-bold fs-4">NotiFicct</span>
@@ -83,6 +84,9 @@ export default function Navbar() {
               </ul>
             </li>
           </ul>
+
+          {/* 🔍 Acá va el buscador minimalista */}
+          <BuscadorEventos />
 
           {/* Menú derecho - Perfil y Cerrar Sesión */}
           {session && (
