@@ -46,10 +46,6 @@ const DetalleEvento = () => {
       `)
       .eq('id_evento', eventoId)
 
-    if (error) {
-      toast.error('Error al cargar los horarios.')
-      return
-    }
 
     const formateado = data.map(h => ({
       dia: h.dia.nombre,
