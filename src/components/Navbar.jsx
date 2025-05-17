@@ -47,7 +47,7 @@ export default function Navbar() {
               <NavLink
                 to="/"
                 className={({ isActive }) =>
-                  `nav-link fs-5 ${isActive ? 'active fw-bold' : ''}`
+                  `nav-link fs-5 text-white ${isActive ? 'fw-bold' : ''}`
                 }
               >
                 Inicio
@@ -56,7 +56,7 @@ export default function Navbar() {
 
             <li className="nav-item dropdown">
               <a
-                className="nav-link dropdown-toggle fs-5"
+                className="nav-link dropdown-toggle fs-5 text-white"
                 href="#"
                 role="button"
                 data-bs-toggle="dropdown"
@@ -66,15 +66,35 @@ export default function Navbar() {
               </a>
               <ul className="dropdown-menu bg-primary border-0 shadow-none">
                 <li>
-                  <NavLink to="/" className="dropdown-item">
+                  <NavLink
+                    to="/"
+                    className={({ isActive }) =>
+                      `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                    }
+                  >
                     Ver Eventos
+                  </NavLink>
+                </li>
+                <li>
+                  <NavLink
+                    to="/mis-eventos"
+                    className={({ isActive }) =>
+                      `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                    }
+                  >
+                    Mis Eventos
                   </NavLink>
                 </li>
                 {session && esAdmin && (
                   <>
                     <li><hr className="dropdown-divider" /></li>
                     <li>
-                      <NavLink to="/crear-evento" className="dropdown-item">
+                      <NavLink
+                        to="/crear-evento"
+                        className={({ isActive }) =>
+                          `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                        }
+                      >
                         Crear Evento
                       </NavLink>
                     </li>
@@ -86,7 +106,7 @@ export default function Navbar() {
             {session && (
               <li className="nav-item dropdown">
                 <a
-                  className="nav-link dropdown-toggle fs-5 text-light"
+                  className="nav-link dropdown-toggle fs-5 text-white"
                   href="#"
                   role="button"
                   data-bs-toggle="dropdown"
@@ -96,7 +116,12 @@ export default function Navbar() {
                 </a>
                 <ul className="dropdown-menu bg-primary border-0 shadow-none">
                   <li>
-                    <NavLink to="/perfil" className="dropdown-item text-white">
+                    <NavLink
+                      to="/perfil"
+                      className={({ isActive }) =>
+                        `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                      }
+                    >
                       Ver Perfil
                     </NavLink>
                   </li>

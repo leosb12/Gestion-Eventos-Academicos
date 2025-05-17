@@ -6,6 +6,7 @@ import EventWrapper from '../components/EventWrapper.jsx'
 import supabase from '../utils/supabaseClient.js'
 import { toast } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
+import { UserAuth } from '../context/AuthContext'
 
 const CrearEvento = () => {
   const [nombre, setNombre] = useState('')
@@ -16,26 +17,51 @@ const CrearEvento = () => {
   const [tipoEvento, setTipoEvento] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
+  const { user } = UserAuth()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
 
     try {
+      // ✅ Verificamos si hay usuario logueado
+      if (!user || !user.email) {
+        toast.error('Error: No hay usuario autenticado.')
+        setLoading(false)
+        return
+      }
+
+      // ✅ Buscamos el id de tu tabla "usuario"
+      const { data: usuarioData, error: usuarioError } = await supabase
+        .from('usuario')
+        .select('id')
+        .eq('correo', user.email)
+        .maybeSingle()
+
+      if (usuarioError || !usuarioData) {
+        toast.error('Error: No se encontró el usuario en la base de datos.')
+        setLoading(false)
+        return
+      }
+
+      const id_usuario = usuarioData.id
+
+      // ✅ Insertamos el evento
       const { error } = await supabase.from('evento').insert([{
         nombre,
         descripcion,
         fechainicio: fechaInicio,
-        fechafin:   fechaFin,
+        fechafin: fechaFin,
         id_ubicacion: parseInt(ubicacion, 10),
-        id_tevento:   parseInt(tipoEvento, 10),
-        id_estado:    1  // por ejemplo: 1 = “Activo”
+        id_tevento: parseInt(tipoEvento, 10),
+        id_estado: 1,
+        id_usuario_creador: id_usuario
       }])
 
       if (error) throw error
 
       toast.success('Evento creado con éxito')
-      navigate('/')   // ← redirige al home donde está <Events />
+      navigate('/')
     } catch (err) {
       toast.error('Error creando evento: ' + err.message)
     } finally {
