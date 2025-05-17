@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import supabase from "../utils/supabaseClient";
 
 export default function BuscadorEventos() {
-  const [mostrarBuscador, setMostrarBuscador] = useState(false);
   const [termino, setTermino] = useState("");
   const [resultados, setResultados] = useState([]);
 
@@ -28,38 +27,31 @@ export default function BuscadorEventos() {
   }, [termino]);
 
   return (
-    <div className="position-relative">
-      <button
-        className="bg-transparent border-0 text-white fs-5"
-        onClick={() => setMostrarBuscador(!mostrarBuscador)}
-        title="Buscar eventos"
-      >
+    <div className="position-relative d-flex align-items-center">
+      <span className="fs-5 me-2" role="img" aria-label="Buscar">
         🔍
-      </button>
+      </span>
+      <input
+        type="text"
+        className="px-2 py-1 rounded"
+        placeholder="Buscar evento..."
+        value={termino}
+        onChange={(e) => setTermino(e.target.value)}
+        style={{
+          width: "200px",
+          backgroundColor: "white",
+          color: "black",
+          border: "1px solid #ccc",
+        }}
+      />
 
-      {mostrarBuscador && (
-        <input
-          type="text"
-          className="ms-2 px-2 py-1 rounded"
-          placeholder="Buscar evento..."
-          value={termino}
-          onChange={(e) => setTermino(e.target.value)}
-          style={{
-            width: "200px",
-            backgroundColor: "white",
-            color: "black",
-            border: "1px solid #ccc",
-          }}
-        />
-      )}
-
-      {mostrarBuscador && resultados.length > 0 && (
+      {resultados.length > 0 && (
         <div
           className="position-absolute mt-2 shadow-sm"
           style={{
             top: "100%",
-            left: "0",
-            right: "0",
+            left: 0,
+            right: 0,
             zIndex: 999,
             backgroundColor: "white",
             borderRadius: "6px",
