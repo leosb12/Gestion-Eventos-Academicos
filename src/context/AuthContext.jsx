@@ -7,6 +7,7 @@ const AuthContext = createContext();
 
 export const AuthContextProvider = ({ children }) => {
   const [session, setSession] = useState(undefined);
+  const [user, setUser] = useState(null); // 👈 importante
   const [tipoUsuario, setTipoUsuario] = useState(null);
 
   const signUpNewUser = async (email, password) => {
@@ -58,14 +59,13 @@ export const AuthContextProvider = ({ children }) => {
     const getSessionAndTipoUsuario = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
+      setUser(session?.user || null); // 👈 guardar el user completo
 
-      if (session) {
-        const { data: { user } } = await supabase.auth.getUser();
-
+      if (session?.user?.email) {
         const { data, error } = await supabase
           .from('usuario')
           .select('id_tipo_usuario')
-          .eq('correo', user.email)
+          .eq('correo', session.user.email)
           .maybeSingle();
 
         if (!error && data) {
@@ -82,6 +82,7 @@ export const AuthContextProvider = ({ children }) => {
 
     const { data: listener } = supabase.auth.onAuthStateChange((_, session) => {
       setSession(session);
+      setUser(session?.user || null); // 👈 actualizar también aquí
       getSessionAndTipoUsuario();
     });
 
@@ -93,6 +94,7 @@ export const AuthContextProvider = ({ children }) => {
   return (
     <AuthContext.Provider value={{
       session,
+      user, // 👈 lo exportamos
       tipoUsuario,
       signUpNewUser,
       signInUser,
