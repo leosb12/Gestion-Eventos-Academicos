@@ -13,6 +13,12 @@ import Perfil from "./pages/Perfil.jsx";
 import DetalleEvento from "./pages/DetalleEvento.jsx";
 import MisEventos from "./pages/MisEventos.jsx";
 import GestionarEventos from './pages/GestionarEventos';
+import VerUsuarios from "./pages/ver-usuarios.jsx"; // ajustá el path si está en otro folder
+import PerfilUsuario from './pages/PerfilUsuario';
+import DarRol from './pages/DarRol';
+import EliminarUsuario from './pages/eliminar-usuario';
+import EventosPorTipo from './pages/EventosPorTipo';
+import GestionarEventos from './pages/GestionarEventos';
 import InscribirEquipo from "./pages/InscribirEquipo.jsx";
 // ajustá el path si está en otro folder
 
@@ -100,5 +106,101 @@ export const router = createBrowserRouter([
   {
     path: "*",
     element: <NotFound />
-  }
+  },
+    {
+        path: "/",
+        element: <MainLayout/>,
+        children: [
+            {
+                index: true,
+                element: (
+                    <PrivateRoute>
+                        <App/>
+                    </PrivateRoute>
+                )
+            },
+            {
+                path: "GestionarEventos",
+                element: <GestionarEventos/>
+            },
+            {
+                path: '/eventos-tipo/:id',
+                element: <EventosPorTipo/>
+            },
+            {
+                path: 'eliminar-usuario',
+                element: <EliminarUsuario/>
+            },
+            {
+                path: "iniciar-sesion",
+                element: <Login/>
+            },
+            {
+                path: "registro",
+                element: <Register/>
+            },
+            {
+                path: "crear-evento",
+                element: (
+                    <PrivateRoute>
+                        <CrearEvento/>
+                    </PrivateRoute>
+                )
+            },
+            {
+                path: "dashboard",
+                element: (
+                    <PrivateRoute>
+                        <Dashboard/>
+                    </PrivateRoute>
+                )
+            },
+
+            {
+                path: 'dar-rol',
+                element: <DarRol/>
+            },
+
+            {
+                path: "update-password",
+                element: <UpdatePassword/>
+            },
+            {
+                path: "ver-usuarios",
+                element: <VerUsuarios/>
+            },
+            {
+                path: "perfil",
+                element: (
+                    <PrivateRoute>
+                        <Perfil/>
+                    </PrivateRoute>
+                )
+            },
+            {
+                path: "evento/:id",
+                element: (
+                    <PrivateRoute>
+                        <DetalleEvento/>
+                    </PrivateRoute>
+                )
+            },
+            {
+                path: "perfil-usuario/:id",
+                element: <PerfilUsuario/>
+            },
+            {
+                path: "mis-eventos",
+                element: (
+                    <PrivateRoute>
+                        <MisEventos/>
+                    </PrivateRoute>
+                )
+            }
+        ]
+    },
+    {
+        path: "*",
+        element: <NotFound/>
+    }
 ]);
