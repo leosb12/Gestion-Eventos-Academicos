@@ -39,8 +39,8 @@ const DetalleEvento = () => {
     const { data, error } = await supabase
       .from('horarioevento')
       .select(`
-        id_evento,
-        id_dia ( nombre ),
+        id_evento ( id ),
+        id_dia ( dia ),
         id_horario_inicio ( hora ),
         id_horario_fin ( hora ),
         id_modalidad ( nombre )
