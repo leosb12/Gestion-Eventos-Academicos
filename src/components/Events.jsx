@@ -3,26 +3,29 @@ import supabase from '../utils/supabaseClient.js';
 import EventCard from './EventCard.jsx';
 import {toast} from 'react-toastify';
 
-const Events = () => {
+const Events = ({filtros}) => {
     const [events, setEvents] = useState([]);
 
     useEffect(() => {
-        fetchEvents();
-    }, []);
+        const fetchEventos = async () => {
+            let query = supabase.from('evento').select('id, nombre, descripcion, imagen_url, fechainicio, fechafin');
 
-    const fetchEvents = async () => {
-        const {data, error} = await supabase
-            .from('evento')
-            .select('id, nombre, descripcion, imagen_url, fechainicio, fechafin')
+            if (filtros.categoria) query = query.eq('id_tevento', filtros.categoria);
+            if (filtros.ubicacion) query = query.eq('id_ubicacion', filtros.ubicacion);
+            if (filtros.fechaInicio) query = query.gte('fechainicio', filtros.fechaInicio);
+            if (filtros.fechaFin) query = query.lte('fechafin', filtros.fechaFin);
 
-            .order('fechainicio', {ascending: true});
+            const {data, error} = await query;
 
-        if (!error) {
-            setEvents(data);
-        } else {
-            toast.error('Error al cargar los eventos');
-        }
-    };
+            if (!error) {
+                setEvents(data);
+            } else {
+                toast.error('Error al cargar los eventos');
+            }
+        };
+
+        fetchEventos();
+    }, [filtros]); // ✅ se actualiza cuando cambia algún filtro
 
     return (
         <section className="container my-5">

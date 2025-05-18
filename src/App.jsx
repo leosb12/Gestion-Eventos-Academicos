@@ -1,31 +1,41 @@
 // src/App.jsx
-import React from 'react';
+import React, {useState} from 'react';
 import Navbar from './components/Navbar.jsx';
 import Carousel from './components/Carousel.jsx';
 import TypewriterComponent from './components/TypewriterComponent.jsx';
 import Events from './components/Events.jsx';
-import { ToastContainer } from 'react-toastify';
+import {ToastContainer} from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
+import FiltroEventos from './components/FiltrarEvento.jsx';
 
 const App = () => {
-  return (
-    <>
-      <Navbar />
+    const [filtros, setFiltros] = useState({
+        categoria: '',
+        ubicacion: '',
+        fechaInicio: '',
+        fechaFin: ''
+    });
 
-      {/* Carrusel de imágenes */}
-      <Carousel />
+    return (
+        <>
+            <Navbar/>
 
-      {/* Texto animado */}
-      <TypewriterComponent />
+            {/* Carrusel de imágenes */}
+            <Carousel/>
 
-      {/* Listado de eventos */}
-      <Events />
+            {/* Texto animado */}
+            <TypewriterComponent/>
 
-      {/* Toast notifications */}
-      <ToastContainer position="top-right" autoClose={3000} />
-    </>
-  );
+            {/* Icono filtrar */}
+            <FiltroEventos onFiltroChange={setFiltros}/>
+
+            {/* Listado de eventos */}
+            <Events filtros={filtros}/>
+
+            {/* Toast notifications */}
+            <ToastContainer position="top-right" autoClose={3000}/>
+        </>
+    );
 };
 
 export default App;
