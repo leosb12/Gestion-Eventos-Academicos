@@ -1,37 +1,38 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import supabase from '../utils/supabaseClient.js';
 import EventCard from './EventCard.jsx';
-import { toast } from 'react-toastify';
+import {toast} from 'react-toastify';
 
 const Events = () => {
-  const [events, setEvents] = useState([]);
+    const [events, setEvents] = useState([]);
 
-  useEffect(() => {
-    fetchEvents();
-  }, []);
+    useEffect(() => {
+        fetchEvents();
+    }, []);
 
- const fetchEvents = async () => {
-  const { data, error } = await supabase
-    .from('evento')
-    .select('id, nombre, descripcion, imagen_url')
-    .order('fechainicio', { ascending: true });
+    const fetchEvents = async () => {
+        const {data, error} = await supabase
+            .from('evento')
+            .select('id, nombre, descripcion, imagen_url, fechainicio, fechafin')
 
-  if (!error) {
-    setEvents(data);
-  } else {
-    toast.error('Error al cargar los eventos');
-  }
-};
+            .order('fechainicio', {ascending: true});
 
-  return (
-    <section className="container my-5">
-      <div className="row row-cols-1 row-cols-md-3 g-4">
-        {events.map(evt => (
-          <EventCard key={evt.id} evento={evt} />
-        ))}
-      </div>
-    </section>
-  );
+        if (!error) {
+            setEvents(data);
+        } else {
+            toast.error('Error al cargar los eventos');
+        }
+    };
+
+    return (
+        <section className="container my-5">
+            <div className="row row-cols-1 row-cols-md-3 g-4">
+                {events.map(evt => (
+                    <EventCard key={evt.id} evento={evt}/>
+                ))}
+            </div>
+        </section>
+    );
 };
 
 export default Events;

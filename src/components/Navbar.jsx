@@ -1,6 +1,7 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {NavLink, useLocation, useNavigate} from 'react-router-dom';
 import {UserAuth} from '../context/AuthContext.jsx';
+import supabase from '../utils/supabaseClient';
 import BuscadorEventos from './BuscadorEventos.jsx';
 
 export default function Navbar() {
@@ -8,6 +9,16 @@ export default function Navbar() {
     const location = useLocation();
     const navigate = useNavigate();
     const [showModal, setShowModal] = useState(false);
+    const [tiposEvento, setTiposEvento] = useState([]);
+    const [submenuAbierto, setSubmenuAbierto] = useState(false); // 👈 nuevo
+
+    useEffect(() => {
+        const fetchTipos = async () => {
+            const {data, error} = await supabase.from('tipoevento').select('id, nombre').order('id');
+            if (!error) setTiposEvento(data);
+        };
+        fetchTipos();
+    }, []);
 
     const hiddenPaths = ['/iniciar-sesion', '/registro'];
     if (hiddenPaths.includes(location.pathname)) return null;
@@ -64,16 +75,44 @@ export default function Navbar() {
                                 Eventos
                             </a>
                             <ul className="dropdown-menu bg-primary border-0 shadow-none">
-                                <li>
-                                    <NavLink
-                                        to="/"
-                                        className={({isActive}) =>
-                                            `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
-                                        }
+
+                                <li className="dropdown-submenu">
+                                    <button
+                                        type="button"
+                                        className="dropdown-item text-white"
+                                        onClick={(e) => {
+                                            e.stopPropagation(); // 👈 esto evita que se cierre el menú "Eventos"
+                                            setSubmenuAbierto(!submenuAbierto);
+                                        }}
+                                        style={{width: '100%', textAlign: 'left', background: 'none', border: 'none'}}
                                     >
-                                        Ver Eventos
-                                    </NavLink>
+                                        Categorias... ▼
+                                    </button>
+
+                                    {submenuAbierto && (
+                                        <ul className="dropdown-menu show" style={{
+                                            position: 'relative',
+                                            background: 'transparent',
+                                            border: 'none',
+                                            boxShadow: 'none'
+                                        }}>
+                                            {tiposEvento.map((tipo) => (
+                                                <li key={tipo.id}>
+                                                    <NavLink
+                                                        to={`/eventos-tipo/${tipo.id}`}
+                                                        className={({isActive}) =>
+                                                            `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                                                        }
+                                                    >
+                                                        {tipo.nombre}
+                                                    </NavLink>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
                                 </li>
+
+
                                 <li>
                                     <NavLink
                                         to="/mis-eventos"
@@ -84,6 +123,7 @@ export default function Navbar() {
                                         Mis Eventos
                                     </NavLink>
                                 </li>
+
                                 {session && (
                                     <>
                                         <li>
@@ -116,7 +156,7 @@ export default function Navbar() {
                             </ul>
                         </li>
 
-                        {/* Menú exclusivo para tipoUsuario === 7 */}
+                        {/* Menú de Usuarios para tipoUsuario 7 */}
                         {tipoUsuario === 7 && (
                             <li className="nav-item dropdown">
                                 <a
@@ -163,6 +203,7 @@ export default function Navbar() {
                             </li>
                         )}
 
+                        {/* Menú Perfil */}
                         {session && (
                             <li className="nav-item dropdown">
                                 <a
@@ -189,7 +230,7 @@ export default function Navbar() {
                                         <button
                                             className="dropdown-item text-white"
                                             onClick={handleOpenModal}
-                                            style={{cursor: "pointer"}}
+                                            style={{cursor: 'pointer'}}
                                         >
                                             Cerrar Sesión
                                         </button>
@@ -209,6 +250,7 @@ export default function Navbar() {
                 </div>
             </nav>
 
+            {/* Modal de cierre de sesión */}
             {showModal && (
                 <div className="custom-modal-overlay">
                     <div className="custom-modal-content">

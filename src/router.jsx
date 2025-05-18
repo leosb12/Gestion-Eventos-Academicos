@@ -17,7 +17,7 @@ import VerUsuarios from "./pages/ver-usuarios.jsx"; // ajustá el path si está 
 import PerfilUsuario from './pages/PerfilUsuario';
 import DarRol from './pages/DarRol';
 import EliminarUsuario from './pages/eliminar-usuario';
-
+import EventosPorTipo from './pages/EventosPorTipo';
 
 export const router = createBrowserRouter([
     {
@@ -35,6 +35,10 @@ export const router = createBrowserRouter([
             {
                 path: "GestionarEventos",
                 element: <GestionarEventos/>
+            },
+            {
+                path: '/eventos-tipo/:id',
+                element: <EventosPorTipo/>
             },
             {
                 path: 'eliminar-usuario',
