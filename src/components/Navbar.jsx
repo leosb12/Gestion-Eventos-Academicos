@@ -98,6 +98,18 @@ export default function Navbar() {
                         Crear Evento
                       </NavLink>
                     </li>
+                    {esAdmin && (
+                      <li>
+                        <NavLink
+                          to="/GestionarEventos"
+                          className={({ isActive }) =>
+                            `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                          }
+                        >
+                          Gestionar Eventos
+                        </NavLink>
+                      </li>
+                    )}
                   </>
                 )}
               </ul>
