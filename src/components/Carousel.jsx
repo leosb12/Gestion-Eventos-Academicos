@@ -1,7 +1,6 @@
 import React, {useEffect, useState} from 'react';
-import supabase from '../utils/supabaseClient';
 import {Link} from 'react-router-dom';
-
+import supabase from '../utils/supabaseClient';
 
 const Carousel = () => {
     const [imagenes, setImagenes] = useState([]);
@@ -13,9 +12,7 @@ const Carousel = () => {
                 .select('evento_id, evento (imagen_url, nombre)')
                 .order('created_at', {ascending: true});
 
-            if (error) {
-                console.error('Error al obtener carrusel:', error);
-            } else {
+            if (!error && data) {
                 setImagenes(data);
             }
         };
@@ -28,31 +25,53 @@ const Carousel = () => {
             id="carouselExample"
             className="carousel slide"
             data-bs-ride="carousel"
-            style={{maxWidth: '100%', margin: '0 auto'}}
+            style={{
+                maxWidth: '100%',
+                height: '400px',
+                overflow: 'hidden',
+                margin: '0 auto'
+            }}
         >
-            <div className="carousel-inner">
+            <div className="carousel-inner h-100">
                 {imagenes.map((item, index) => (
                     <div
                         key={item.evento_id}
-                        className={`carousel-item ${index === 0 ? 'active' : ''}`}
+                        className={`carousel-item h-100 ${index === 0 ? 'active' : ''}`}
                         data-bs-interval="3000"
+                        style={{position: 'relative'}}
                     >
                         <Link to={`/evento/${item.evento_id}`}>
                             <img
                                 src={item.evento.imagen_url}
-                                className="d-block w-100"
-                                style={{height: '400px', objectFit: 'cover'}}
-                                alt={`Imagen del evento`}
+                                className="d-block w-100 h-100"
+                                style={{objectFit: 'cover'}}
+                                alt="Imagen del evento"
                             />
+                            {/* ✅ Texto centrado en medio de la imagen */}
+                            <div
+                                style={{
+                                    position: 'absolute',
+                                    top: '50%',
+                                    left: '50%',
+                                    transform: 'translate(-50%, -50%)',
+                                    background: 'rgba(0, 0, 0, 0.5)',
+                                    color: 'white',
+                                    padding: '10px 20px',
+                                    fontSize: '1.5rem',
+                                    fontWeight: 'bold',
+                                    textAlign: 'center',
+                                    textShadow: '2px 2px 4px black',
+                                    borderRadius: '8px',
+                                }}
+                            >
+                                {item.evento.nombre}
+                            </div>
                         </Link>
-                        <div className="carousel-caption d-none d-md-block bg-dark bg-opacity-50 rounded p-2">
-                            <h5>{item.evento.nombre}</h5>
-                        </div>
                     </div>
                 ))}
-
             </div>
 
+            {/* Controles del carrusel */}
             <button
                 className="carousel-control-prev"
                 type="button"
