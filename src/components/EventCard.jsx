@@ -21,6 +21,11 @@ const EventCard = ({evento}) => {
     const fechaInicio = formatearFecha(evento.fechainicio);
     const fechaFin = formatearFecha(evento.fechafin);
 
+    const descripcionLimitada = (texto, limite) => {
+        if (!texto) return '';
+        return texto.length > limite ? texto.slice(0, limite) + '...' : texto;
+    };
+
     return (
         <div className="col" onClick={handleClick} style={{cursor: 'pointer'}}>
             <div className="card h-100 shadow-sm bg-white p-2 rounded-4 text-center">
@@ -32,7 +37,9 @@ const EventCard = ({evento}) => {
                 />
                 <div className="card-body d-flex flex-column">
                     <h5 className="card-title">{evento.nombre}</h5>
-                    <p className="card-text">{evento.descripcion}</p>
+                    <p className="card-text">
+                        {descripcionLimitada(evento.descripcion, 200)}
+                    </p>
                     {fechaInicio && fechaFin && (
                         <p className="text-muted small mb-0">
                             {fechaInicio} - {fechaFin}
