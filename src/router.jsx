@@ -12,6 +12,8 @@ import UpdatePassword from "./pages/UpdatePassword.jsx";
 import Perfil from "./pages/Perfil.jsx";
 import DetalleEvento from "./pages/DetalleEvento.jsx";
 import MisEventos from "./pages/MisEventos.jsx";
+import GestionarEventos from './pages/GestionarEventos'; // ajustá el path si está en otro folder
+
 
 export const router = createBrowserRouter([
   {
@@ -25,7 +27,11 @@ export const router = createBrowserRouter([
             <App />
           </PrivateRoute>
         )
-      },
+       },
+      {
+        path: "GestionarEventos",
+        element: <GestionarEventos />
+        },
       {
         path: "iniciar-sesion",
         element: <Login />
