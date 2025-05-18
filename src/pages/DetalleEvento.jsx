@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import Navbar from '../components/Navbar.jsx'
@@ -39,28 +40,20 @@ const DetalleEvento = () => {
       .from('horarioevento')
       .select(`
         id_evento,
-        id_dia (
-          dia
-        ),
-        id_horario_inicio (
-          hora
-        ),
-        id_horario_fin (
-          hora
-        ),
-        id_modalidad (
-          nombre
-        )
+        id_dia ( nombre ),
+        id_horario_inicio ( hora ),
+        id_horario_fin ( hora ),
+        id_modalidad ( nombre )
       `)
-
       .eq('id_evento', eventoId)
 
     if (error) {
-     console.error("❌ Error al obtener horarios:", error.message, error.details, error.hint);
-  return;
-    } else {
-      setHorarios(data)
+      console.error("❌ Error al obtener horarios:", error.message, error.details, error.hint)
+      return;
     }
+
+    console.log("📅 Datos de horarios obtenidos:", data)
+    setHorarios(data)
   }
 
   if (!evento) return <p className="text-center mt-5">Cargando evento...</p>
@@ -132,13 +125,14 @@ const DetalleEvento = () => {
             ) : (
               <div className="row g-4">
                 {horarios.map((h, index) => (
-                  <HorarioCard
-                    key={index}
-                    dia={h.dia?.nombre || '-'}
-                    horaInicio={h.inicio?.hora || '-'}
-                    horaFin={h.fin?.hora || '-'}
-                    modalidad={h.modalidad?.nombre || '-'}
-                  />
+                 <HorarioCard
+                  key={index}
+                  dia={h.id_dia?.dia || '-'}
+                  horaInicio={h.id_horario_inicio?.hora?.slice(0, 5) || '-'}
+                  horaFin={h.id_horario_fin?.hora?.slice(0, 5) || '-'}
+                  modalidad={h.id_modalidad?.nombre || '-'}
+                />
+
                 ))}
               </div>
             )}
