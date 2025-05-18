@@ -64,7 +64,11 @@ export const router = createBrowserRouter([
       },
       {
         path: "evento/:id",
-        element: <DetalleEvento />
+        element: (
+          <PrivateRoute>
+            <DetalleEvento />
+          </PrivateRoute>
+        )
       },
       {
         path: "mis-eventos",
