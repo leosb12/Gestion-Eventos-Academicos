@@ -1,9 +1,11 @@
 // src/App.jsx
-import React from 'react'
-import Navbar from './components/Navbar.jsx'
-import Carousel from './components/Carousel.jsx'
-import TypewriterComponent from './components/TypewriterComponent.jsx'
-import Events from './components/Events.jsx'
+import React from 'react';
+import Navbar from './components/Navbar.jsx';
+import Carousel from './components/Carousel.jsx';
+import TypewriterComponent from './components/TypewriterComponent.jsx';
+import Events from './components/Events.jsx';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const App = () => {
   return (
@@ -18,8 +20,11 @@ const App = () => {
 
       {/* Listado de eventos */}
       <Events />
-    </>
-  )
-}
 
-export default App
+      {/* Toast notifications */}
+      <ToastContainer position="top-right" autoClose={3000} />
+    </>
+  );
+};
+
+export default App;

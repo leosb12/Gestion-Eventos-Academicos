@@ -6,9 +6,25 @@
     object-position: center;
     background-color: rgba(30, 30, 47, 0.8)
 }
+/* Fuerza color blanco siempre en nav y evita fondo al hacer clic */
+.navbar .nav-link,
+.navbar .dropdown-item {
+  color: white !important;
+}
+
+.navbar .nav-link:focus,
+.navbar .nav-link:active,
+.navbar .dropdown-item:focus,
+.navbar .dropdown-item:active,
+.navbar .nav-link.show {
+  color: white !important;
+  background-color: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
 
 .dropdown-item:hover {
-    background-color: #f8f9fa !important;
+    background-color: #0b5ed7 !important;
 }
 
 #menu li > a {
@@ -89,7 +105,4 @@
 body {
   background-color: #f4f6f9;
 }
-
-
-
 
