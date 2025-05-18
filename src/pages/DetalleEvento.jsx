@@ -2,20 +2,53 @@ import React, {useEffect, useState} from 'react'
 import {useNavigate, useParams} from 'react-router-dom'
 import Navbar from '../components/Navbar.jsx'
 import supabase from '../utils/supabaseClient.js'
-import {toast} from 'react-toastify'
+import {toast, ToastContainer} from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import HorarioCard from '../components/HorarioCard.jsx'
+import {UserAuth} from '../context/AuthContext.jsx'
 
 const DetalleEvento = () => {
     const {id} = useParams()
+    const {user} = UserAuth()
+    const navigate = useNavigate()
+
     const [evento, setEvento] = useState(null)
     const [horarios, setHorarios] = useState([])
     const [ampliada, setAmpliada] = useState(false)
-    const navigate = useNavigate()
+    const [usuarioId, setUsuarioId] = useState(null)
+    const [estaInscrito, setEstaInscrito] = useState(false)
+    const [mostrarModalCancelar, setMostrarModalCancelar] = useState(false)
 
     useEffect(() => {
         fetchEvento()
     }, [id])
+
+    useEffect(() => {
+        if (user?.email) {
+            obtenerUsuarioId()
+        }
+    }, [user])
+
+    useEffect(() => {
+        if (evento && usuarioId) {
+            verificarInscripcion()
+        }
+    }, [evento, usuarioId])
+
+    const obtenerUsuarioId = async () => {
+        const {data, error} = await supabase
+            .from('usuario')
+            .select('id')
+            .eq('correo', user.email)
+            .maybeSingle()
+
+        if (error || !data) {
+            toast.error('No se pudo identificar al usuario.')
+            return
+        }
+
+        setUsuarioId(data.id)
+    }
 
     const fetchEvento = async () => {
         const {data, error} = await supabase
@@ -46,20 +79,119 @@ const DetalleEvento = () => {
       `)
             .eq('id_evento', eventoId)
 
-        if (error) {
-            console.error("❌ Error al obtener horarios:", error.message, error.details, error.hint)
-            return;
+        if (!error) setHorarios(data)
+    }
+
+    const verificarInscripcion = async () => {
+        const {data, error} = await supabase
+            .from('inscripcionevento')
+            .select('id_evento')
+            .eq('id_evento', id)
+            .eq('id_usuario', usuarioId)
+
+        if (!error) {
+            setEstaInscrito(data.length > 0)
+        }
+    }
+
+    const manejarInscripcion = async () => {
+        if (!evento || !usuarioId) return
+
+        const tipoEvento = parseInt(evento?.id_tevento ?? 0)
+        const estadoEvento = parseInt(evento?.id_estado ?? 0)
+
+        if (estadoEvento !== 1) {
+            toast.warning('Este evento no está disponible para inscripción.')
+            return
         }
 
-        console.log("📅 Datos de horarios obtenidos:", data)
-        setHorarios(data)
+        if ((tipoEvento === 4 || tipoEvento === 2) && !estaInscrito) {
+            toast.info('Redirigiendo a la inscripción por equipo...')
+            navigate(`/inscribir-equipo/${id}`)
+            return
+        }
+
+        if (!estaInscrito) {
+            const {error} = await supabase
+                .from('inscripcionevento')
+                .insert({id_evento: parseInt(id), id_usuario: usuarioId})
+
+            if (!error) {
+                toast.success('Inscripción completada.')
+                setEstaInscrito(true)
+            } else {
+                toast.error('Error al inscribirse al evento.')
+            }
+        } else {
+            setMostrarModalCancelar(true)
+        }
+    }
+
+    const confirmarCancelacion = async () => {
+        try {
+            const {data: equipo, error: equipoError} = await supabase
+                .from('equipo')
+                .select('id, id_lider')
+                .eq('id_lider', usuarioId)
+                .maybeSingle()
+
+            if (equipo && equipo.id_lider === usuarioId) {
+                const {data: miembros} = await supabase
+                    .from('miembrosequipo')
+                    .select('id_usuario')
+                    .eq('id_equipo', equipo.id)
+
+                const idsMiembros = miembros.map(m => m.id_usuario)
+
+                await supabase.from('inscripcionevento').delete().in('id_usuario', idsMiembros).eq('id_evento', id)
+                await supabase.from('miembrosequipo').delete().eq('id_equipo', equipo.id)
+                await supabase.from('nivelgrupo').delete().eq('id_equipo', equipo.id)
+                await supabase.from('equipo').delete().eq('id', equipo.id)
+
+                toast.success('Se canceló la inscripción del equipo completo.')
+            } else {
+                await supabase.from('inscripcionevento').delete().match({id_evento: id, id_usuario: usuarioId})
+                await supabase.from('miembrosequipo').delete().match({id_usuario: usuarioId})
+                toast.success('Te has salido del equipo correctamente.')
+            }
+
+            setEstaInscrito(false)
+        } catch (err) {
+            toast.error('Error al cancelar la inscripción.')
+        } finally {
+            setMostrarModalCancelar(false)
+        }
     }
 
     if (!evento) return <p className="text-center mt-5">Cargando evento...</p>
 
+
     return (
         <>
             <Navbar/>
+
+            {mostrarModalCancelar && (
+                <div className="modal fade show d-block" tabIndex="-1" style={{backgroundColor: 'rgba(0,0,0,0.5)'}}>
+                    <div className="modal-dialog modal-dialog-centered">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">Confirmar cancelación</h5>
+                                <button type="button" className="btn-close"
+                                        onClick={() => setMostrarModalCancelar(false)}></button>
+                            </div>
+                            <div className="modal-body">
+                                <p>¿Estás seguro de cancelar tu inscripción al evento?</p>
+                            </div>
+                            <div className="modal-footer">
+                                <button className="btn btn-secondary"
+                                        onClick={() => setMostrarModalCancelar(false)}>No
+                                </button>
+                                <button className="btn btn-danger" onClick={confirmarCancelacion}>Sí, cancelar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {ampliada && (
                 <div
@@ -97,20 +229,25 @@ const DetalleEvento = () => {
                         <section className="border rounded p-4 w-100 bg-white shadow-sm">
                             <div className="row row-cols-1 row-cols-sm-1 row-cols-md-2">
                                 <div className="col">
-                                    <p className="text-center fw-semibold mb-2">Empieza el:</p>
+                                    <p className="text-center fw-semibold mb-2">Empieza en:</p>
                                     <p className="text-center fs-5 mb-4">
                                         {new Date(evento.fechainicio).toLocaleDateString()}
                                     </p>
                                 </div>
                                 <div className="col">
-                                    <p className="text-center fw-semibold mb-2">Termina el:</p>
+                                    <p className="text-center fw-semibold mb-2">Termina en:</p>
                                     <p className="text-center fs-5 mb-4">
                                         {new Date(evento.fechafin).toLocaleDateString()}
                                     </p>
                                 </div>
                             </div>
                             <div className="d-flex justify-content-center">
-                                <button className="btn btn-primary px-4">Inscribirse</button>
+                                <button
+                                    className={`btn ${estaInscrito ? 'btn-secondary' : 'btn-primary'} px-4`}
+                                    onClick={manejarInscripcion}
+                                >
+                                    {estaInscrito ? 'Cancelar inscripción' : 'Inscribirse'}
+                                </button>
                             </div>
                         </section>
                     </div>
@@ -131,13 +268,13 @@ const DetalleEvento = () => {
                                         horaFin={h.id_horario_fin?.hora?.slice(0, 5) || '-'}
                                         modalidad={h.id_modalidad?.nombre || '-'}
                                     />
-
                                 ))}
                             </div>
                         )}
                     </div>
                 </section>
             </div>
+            <ToastContainer position="top-right" autoClose={3000}/>
         </>
     )
 }

@@ -18,8 +18,93 @@ import PerfilUsuario from './pages/PerfilUsuario';
 import DarRol from './pages/DarRol';
 import EliminarUsuario from './pages/eliminar-usuario';
 import EventosPorTipo from './pages/EventosPorTipo';
+import InscribirEquipo from "./pages/InscribirEquipo.jsx";
+
 
 export const router = createBrowserRouter([
+    {
+        path: "/",
+        element: <MainLayout/>,
+        children: [
+            {
+                index: true,
+                element: (
+                    <PrivateRoute>
+                        <App/>
+                    </PrivateRoute>
+                )
+            },
+            {
+                path: "GestionarEventos",
+                element: <GestionarEventos/>
+            },
+            {
+                path: "iniciar-sesion",
+                element: <Login/>
+            },
+            {
+                path: "registro",
+                element: <Register/>
+            },
+            {
+                path: "crear-evento",
+                element: (
+                    <PrivateRoute>
+                        <CrearEvento/>
+                    </PrivateRoute>
+                )
+            },
+            {
+                path: "dashboard",
+                element: (
+                    <PrivateRoute>
+                        <Dashboard/>
+                    </PrivateRoute>
+                )
+            },
+            {
+                path: "update-password",
+                element: <UpdatePassword/>
+            },
+            {
+                path: "perfil",
+                element: (
+                    <PrivateRoute>
+                        <Perfil/>
+                    </PrivateRoute>
+                )
+            },
+            {
+                path: "evento/:id",
+                element: (
+                    <PrivateRoute>
+                        <DetalleEvento/>
+                    </PrivateRoute>
+                )
+            },
+            {
+                path: "mis-eventos",
+                element: (
+                    <PrivateRoute>
+                        <MisEventos/>
+                    </PrivateRoute>
+                )
+            },
+            {
+                path: "inscribir-equipo/:id",
+                element: (
+                    <PrivateRoute>
+                        <InscribirEquipo/>
+                    </PrivateRoute>
+                )
+            }
+        ]
+
+    },
+    {
+        path: "*",
+        element: <NotFound/>
+    },
     {
         path: "/",
         element: <MainLayout/>,
