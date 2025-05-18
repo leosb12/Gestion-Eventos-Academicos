@@ -12,7 +12,9 @@ import UpdatePassword from "./pages/UpdatePassword.jsx";
 import Perfil from "./pages/Perfil.jsx";
 import DetalleEvento from "./pages/DetalleEvento.jsx";
 import MisEventos from "./pages/MisEventos.jsx";
-import GestionarEventos from './pages/GestionarEventos'; // ajustá el path si está en otro folder
+import GestionarEventos from './pages/GestionarEventos';
+import InscribirEquipo from "./pages/InscribirEquipo.jsx";
+// ajustá el path si está en otro folder
 
 
 export const router = createBrowserRouter([
@@ -83,8 +85,17 @@ export const router = createBrowserRouter([
             <MisEventos />
           </PrivateRoute>
         )
+      },
+      {
+          path: "inscribir-equipo/:id",
+          element: (
+          <PrivateRoute>
+            <InscribirEquipo />
+          </PrivateRoute>
+        )
       }
     ]
+
   },
   {
     path: "*",
