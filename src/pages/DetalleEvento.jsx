@@ -129,39 +129,50 @@ const DetalleEvento = () => {
 
     const confirmarCancelacion = async () => {
         try {
+            const tipoEvento = parseInt(evento?.id_tevento ?? 0);
+
             const {data: equipo, error: equipoError} = await supabase
                 .from('equipo')
                 .select('id, id_lider')
                 .eq('id_lider', usuarioId)
-                .maybeSingle()
+                .maybeSingle();
 
-            if (equipo && equipo.id_lider === usuarioId) {
+            if ((tipoEvento === 4 || tipoEvento === 2) && equipo && equipo.id_lider === usuarioId) {
+                // Si es Hackathon o Feria y el usuario es el líder
                 const {data: miembros} = await supabase
                     .from('miembrosequipo')
                     .select('id_usuario')
-                    .eq('id_equipo', equipo.id)
+                    .eq('id_equipo', equipo.id);
 
-                const idsMiembros = miembros.map(m => m.id_usuario)
+                const idsMiembros = miembros.map(m => m.id_usuario);
 
-                await supabase.from('inscripcionevento').delete().in('id_usuario', idsMiembros).eq('id_evento', id)
-                await supabase.from('miembrosequipo').delete().eq('id_equipo', equipo.id)
-                await supabase.from('nivelgrupo').delete().eq('id_equipo', equipo.id)
-                await supabase.from('equipo').delete().eq('id', equipo.id)
+                await supabase.from('inscripcionevento').delete().in('id_usuario', idsMiembros).eq('id_evento', id);
+                await supabase.from('miembrosequipo').delete().eq('id_equipo', equipo.id);
+                await supabase.from('nivelgrupo').delete().eq('id_equipo', equipo.id);
+                await supabase.from('equipo').delete().eq('id', equipo.id);
 
-                toast.success('Se canceló la inscripción del equipo completo.')
+                toast.success('Se canceló la inscripción del equipo completo.');
+            } else if (tipoEvento === 4 || tipoEvento === 2) {
+                // Si es Hackathon o Feria pero no es el líder
+                await supabase.from('inscripcionevento').delete().match({id_evento: id, id_usuario: usuarioId});
+                await supabase.from('miembrosequipo').delete().match({id_usuario: usuarioId});
+
+                toast.success('Te has salido del equipo correctamente.');
             } else {
-                await supabase.from('inscripcionevento').delete().match({id_evento: id, id_usuario: usuarioId})
-                await supabase.from('miembrosequipo').delete().match({id_usuario: usuarioId})
-                toast.success('Te has salido del equipo correctamente.')
+                // Si no es Hackathon ni Feria
+                await supabase.from('inscripcionevento').delete().match({id_evento: id, id_usuario: usuarioId});
+
+                toast.success('Cancelación completada correctamente.');
             }
 
-            setEstaInscrito(false)
+            setEstaInscrito(false);
         } catch (err) {
-            toast.error('Error al cancelar la inscripción.')
+            toast.error('Error al cancelar la inscripción.');
         } finally {
-            setMostrarModalCancelar(false)
+            setMostrarModalCancelar(false);
         }
-    }
+    };
+
 
     if (!evento) return <p className="text-center mt-5">Cargando evento...</p>
 
