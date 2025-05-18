@@ -1,25 +1,27 @@
-import React, { useEffect, useState } from 'react'
-import supabase from '../utils/supabaseClient.js'
-import EventCard from './EventCard.jsx'
-import {toast} from "react-toastify";
+import React, { useEffect, useState } from 'react';
+import supabase from '../utils/supabaseClient.js';
+import EventCard from './EventCard.jsx';
+import { toast } from 'react-toastify';
 
 const Events = () => {
-  const [events, setEvents] = useState([])
+  const [events, setEvents] = useState([]);
 
   useEffect(() => {
-    fetchEvents()
-  }, [])
+    fetchEvents();
+  }, []);
 
-  const fetchEvents = async () => {
-    const { data, error } = await supabase
-      .from('evento')
-        .select('id,nombre')
-      .order('fechainicio', { ascending: true })
+ const fetchEvents = async () => {
+  const { data, error } = await supabase
+    .from('evento')
+    .select('id, nombre, descripcion, imagen_url')
+    .order('fechainicio', { ascending: true });
 
-    if (!error) {
-      setEvents(data)
-    }
+  if (!error) {
+    setEvents(data);
+  } else {
+    toast.error('Error al cargar los eventos');
   }
+};
 
   return (
     <section className="container my-5">
@@ -29,7 +31,7 @@ const Events = () => {
         ))}
       </div>
     </section>
-  )
-}
+  );
+};
 
-export default Events
+export default Events;

@@ -1,73 +1,148 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import Navbar from '../components/Navbar.jsx'
-import AuthBackground from '../components/AuthBackground.jsx'
-import EventWrapper from '../components/EventWrapper.jsx'
-import supabase from '../utils/supabaseClient.js'
-import { toast } from 'react-toastify'
-import 'react-toastify/dist/ReactToastify.css'
-import { UserAuth } from '../context/AuthContext'
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Navbar from '../components/Navbar.jsx';
+import AuthBackground from '../components/AuthBackground.jsx';
+import EventWrapper from '../components/EventWrapper.jsx';
+import supabase from '../utils/supabaseClient.js';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { UserAuth } from '../context/AuthContext';
 
 const CrearEvento = () => {
-  const [nombre, setNombre] = useState('')
-  const [descripcion, setDescripcion] = useState('')
-  const [fechaInicio, setFechaInicio] = useState('')
-  const [fechaFin, setFechaFin] = useState('')
-  const [ubicacion, setUbicacion] = useState('')
-  const [tipoEvento, setTipoEvento] = useState('')
-  const [loading, setLoading] = useState(false)
-  const navigate = useNavigate()
-  const { user } = UserAuth()
+  const { user, tipoUsuario } = UserAuth();
+  const esAdmin = tipoUsuario === 6 || tipoUsuario === 7;
+  const navigate = useNavigate();
+
+  const [nombre, setNombre] = useState('');
+  const [descripcion, setDescripcion] = useState('');
+  const [fechaInicio, setFechaInicio] = useState('');
+  const [fechaFin, setFechaFin] = useState('');
+  const [ubicacion, setUbicacion] = useState('');
+  const [tipoEvento, setTipoEvento] = useState('');
+  const [imagen, setImagen] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const [horarios, setHorarios] = useState([]);
+  const [horarioInicio, setHorarioInicio] = useState('');
+  const [horarioFin, setHorarioFin] = useState('');
+  const [modalidad, setModalidad] = useState('');
+  const [dia, setDia] = useState('');
+  const [bloquesHorarios, setBloquesHorarios] = useState([]);
+
+  useEffect(() => {
+    const fetchHorarios = async () => {
+      const { data, error } = await supabase.from('horario').select('*');
+      if (!error) setHorarios(data);
+    };
+    fetchHorarios();
+  }, []);
+
+  const agregarBloqueHorario = () => {
+    if (horarioInicio && horarioFin && modalidad && dia) {
+      setBloquesHorarios(prev => [
+        ...prev,
+        {
+          id_horario_inicio: parseInt(horarioInicio),
+          id_horario_fin: parseInt(horarioFin),
+          id_modalidad: parseInt(modalidad),
+          id_dia: parseInt(dia)
+        }
+      ]);
+      setHorarioInicio('');
+      setHorarioFin('');
+      setModalidad('');
+      setDia('');
+    } else {
+      toast.warn('Completa todos los campos del bloque horario.');
+    }
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    if (bloquesHorarios.length === 0) {
+      toast.error('Debes agregar al menos un bloque horario.');
+      return;
+    }
+    setLoading(true);
 
     try {
-      // ✅ Verificamos si hay usuario logueado
-      if (!user || !user.email) {
-        toast.error('Error: No hay usuario autenticado.')
-        setLoading(false)
-        return
+      if (!user?.email) {
+        toast.error('No hay usuario autenticado.');
+        return;
       }
 
-      // ✅ Buscamos el id de tu tabla "usuario"
-      const { data: usuarioData, error: usuarioError } = await supabase
+      const { data: usuarioData } = await supabase
         .from('usuario')
         .select('id')
         .eq('correo', user.email)
-        .maybeSingle()
+        .maybeSingle();
 
-      if (usuarioError || !usuarioData) {
-        toast.error('Error: No se encontró el usuario en la base de datos.')
-        setLoading(false)
-        return
+      const id_usuario = usuarioData?.id;
+      if (!id_usuario) {
+        toast.error('No se pudo obtener el ID del usuario.');
+        return;
       }
 
-      const id_usuario = usuarioData.id
+      const { data: insertedEvento, error: insertError } = await supabase
+        .from('evento')
+        .insert([{
+          nombre,
+          descripcion,
+          fechainicio: fechaInicio,
+          fechafin: fechaFin,
+          id_ubicacion: parseInt(ubicacion),
+          id_tevento: parseInt(tipoEvento),
+          id_estado: 1,
+          id_usuario_creador: id_usuario,
+          imagen_url: null
+        }])
+        .select()
+        .single();
 
-      // ✅ Insertamos el evento
-      const { error } = await supabase.from('evento').insert([{
-        nombre,
-        descripcion,
-        fechainicio: fechaInicio,
-        fechafin: fechaFin,
-        id_ubicacion: parseInt(ubicacion, 10),
-        id_tevento: parseInt(tipoEvento, 10),
-        id_estado: 1,
-        id_usuario_creador: id_usuario
-      }])
+      if (insertError) throw insertError;
 
-      if (error) throw error
+      if (imagen) {
+        const fileExt = imagen.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        const filePath = fileName;
 
-      toast.success('Evento creado con éxito')
-      navigate('/')
+        const { error: uploadError } = await supabase.storage
+          .from('event-images')
+          .upload(filePath, imagen);
+
+        if (!uploadError) {
+          const { data: publicUrlData } = supabase.storage
+            .from('event-images')
+            .getPublicUrl(filePath);
+
+          const imagenUrl = publicUrlData?.publicUrl;
+
+          await supabase
+            .from('evento')
+            .update({ imagen_url: imagenUrl })
+            .eq('id', insertedEvento.id);
+        }
+      }
+
+      if (bloquesHorarios.length > 0) {
+        const inserts = bloquesHorarios.map(b => ({
+          ...b,
+          id_evento: insertedEvento.id
+        }));
+        console.log('Bloques a insertar:', inserts);
+
+        await supabase.from('horarioevento').insert(inserts);
+      }
+
+      toast.success('Evento creado correctamente');
+      navigate('/');
     } catch (err) {
-      toast.error('Error creando evento: ' + err.message)
+      toast.error('Error creando evento');
+      console.error(err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <>
@@ -86,8 +161,102 @@ const CrearEvento = () => {
               />
             </div>
 
+            <div className="row mb-4 g-3 align-items-end">
+              <div className="col-md-2 col-6">
+                <label className="form-label">Horario Inicio:</label>
+                <select
+                  className="form-select"
+                  value={horarioInicio}
+                  onChange={e => setHorarioInicio(e.target.value)}
+                  required={bloquesHorarios.length === 0}
+                >
+                  <option value="">S</option>
+                  {horarios.map(h => (
+                    <option key={h.id} value={h.id}>{h.hora}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-md-2 col-6">
+                <label className="form-label">Horario Fin:</label>
+                <select
+                  className="form-select"
+                  value={horarioFin}
+                  onChange={e => setHorarioFin(e.target.value)}
+                  required={bloquesHorarios.length === 0}
+                >
+                  <option value="">S</option>
+                  {horarios.map(h => (
+                    <option key={h.id} value={h.id}>{h.hora}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-md-2 col-6">
+                <label className="form-label">Modalidad:</label>
+                <select
+                  className="form-select"
+                  value={modalidad}
+                  onChange={e => setModalidad(e.target.value)}
+                  required={bloquesHorarios.length === 0}
+                >
+                  <option value="">S</option>
+                  <option value="1">Presencial</option>
+                  <option value="2">Virtual</option>
+                  <option value="3">SemiPresencial</option>
+                </select>
+              </div>
+              <div className="col-md-2 col-6">
+                <label className="form-label">Día:</label>
+                <select
+                  className="form-select"
+                  value={dia}
+                  onChange={e => setDia(e.target.value)}
+                  required={bloquesHorarios.length === 0}
+                >
+                  <option value="">S</option>
+                  <option value="1">Lunes</option>
+                  <option value="2">Martes</option>
+                  <option value="3">Miércoles</option>
+                  <option value="4">Jueves</option>
+                  <option value="5">Viernes</option>
+                  <option value="6">Sábado</option>
+                  <option value="7">Domingo</option>
+                </select>
+              </div>
+              <div className="col-12 col-md-4 mt-2 mt-md-0">
+                <button type="button" className="btn btn-dark w-100" onClick={agregarBloqueHorario}>
+                  + Agregar Bloque Horario
+                </button>
+              </div>
+            </div>
+
+            <ul>
+              {bloquesHorarios.map((b, i) => {
+                const diaNombre = ["", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"][b.id_dia];
+                const inicioHora = horarios.find(h => h.id === b.id_horario_inicio)?.hora || b.id_horario_inicio;
+                const finHora = horarios.find(h => h.id === b.id_horario_fin)?.hora || b.id_horario_fin;
+                const modalidadTexto = { 1: "Presencial", 2: "Virtual", 3: "Híbrida" }[b.id_modalidad] || b.id_modalidad;
+
+                return (
+                  <li key={i}>
+                    {diaNombre} - de {inicioHora} a {finHora} ({modalidadTexto})
+                  </li>
+                );
+              })}
+            </ul>
+
             <div className="mb-3">
-              <label className="form-label">Descripción del Evento:</label>
+              <label className="form-label">Imagen del Evento:</label>
+              <input
+                type="file"
+                accept="image/*"
+                className="form-control"
+                onChange={e => setImagen(e.target.files[0])}
+                required
+              />
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label">Descripción:</label>
               <textarea
                 className="form-control"
                 value={descripcion}
@@ -144,11 +313,18 @@ const CrearEvento = () => {
                   required
                 >
                   <option value="">Selecciona...</option>
-                  <option value="1">Conferencia</option>
-                  <option value="2">Feria Expositiva</option>
-                  <option value="3">Taller</option>
-                  <option value="4">Hackathon</option>
-                  <option value="5">Cursos</option>
+                  {esAdmin ? (
+                    <>
+                      <option value="1">Conferencia</option>
+                      <option value="2">Feria Expositiva</option>
+                      <option value="3">Taller</option>
+                      <option value="4">Hackathon</option>
+                      <option value="5">Cursos</option>
+                      <option value="6">Evento Informal</option>
+                    </>
+                  ) : (
+                    <option value="6">Evento Informal</option>
+                  )}
                 </select>
               </div>
             </div>
@@ -166,7 +342,7 @@ const CrearEvento = () => {
         </EventWrapper>
       </AuthBackground>
     </>
-  )
-}
+  );
+};
 
-export default CrearEvento
+export default CrearEvento;

@@ -85,7 +85,7 @@ export default function Navbar() {
                     Mis Eventos
                   </NavLink>
                 </li>
-                {session && esAdmin && (
+                {session && (
                   <>
                     <li><hr className="dropdown-divider" /></li>
                     <li>

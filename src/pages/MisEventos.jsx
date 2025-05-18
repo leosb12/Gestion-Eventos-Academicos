@@ -16,7 +16,9 @@ const MisEventos = () => {
     nombre: '',
     descripcion: '',
     fechainicio: '',
-    fechafin: ''
+    fechafin: '',
+    imagen_url: '',
+    nuevaImagen: null
   });
 
   useEffect(() => {
@@ -61,23 +63,52 @@ const MisEventos = () => {
       nombre: evento.nombre,
       descripcion: evento.descripcion,
       fechainicio: evento.fechainicio,
-      fechafin: evento.fechafin
+      fechafin: evento.fechafin,
+      imagen_url: evento.imagen_url,
+      nuevaImagen: null
     });
   };
 
   const cancelarEdicion = () => {
     setEditandoId(null);
-    setForm({ nombre: '', descripcion: '', fechainicio: '', fechafin: '' });
+    setForm({ nombre: '', descripcion: '', fechainicio: '', fechafin: '', imagen_url: '', nuevaImagen: null });
   };
 
   const guardarCambios = async (id) => {
+    let nuevaURL = form.imagen_url;
+
+    if (form.nuevaImagen) {
+      const fileExt = form.nuevaImagen.name.split('.').pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = fileName;
+
+      const { error: uploadError } = await supabase.storage
+        .from('event-images')
+        .upload(filePath, form.nuevaImagen, {
+          contentType: form.nuevaImagen.type
+        });
+
+      if (uploadError) {
+        toast.error("No se pudo subir la nueva imagen");
+        console.error(uploadError);
+        return;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('event-images')
+        .getPublicUrl(filePath);
+
+      nuevaURL = publicUrlData?.publicUrl;
+    }
+
     const { error } = await supabase
       .from('evento')
       .update({
         nombre: form.nombre,
         descripcion: form.descripcion,
         fechainicio: form.fechainicio,
-        fechafin: form.fechafin
+        fechafin: form.fechafin,
+        imagen_url: nuevaURL
       })
       .eq('id', id);
 
@@ -85,7 +116,9 @@ const MisEventos = () => {
       toast.error("Error al guardar cambios: " + error.message);
     } else {
       setEventos((prev) =>
-        prev.map((ev) => (ev.id === id ? { ...ev, ...form } : ev))
+        prev.map((ev) =>
+          ev.id === id ? { ...ev, ...form, imagen_url: nuevaURL } : ev
+        )
       );
       toast.success("Evento actualizado correctamente");
       cancelarEdicion();
@@ -156,6 +189,27 @@ const MisEventos = () => {
                           />
                         </div>
                       </div>
+                      {/* Imagen actual */}
+                      {form.imagen_url && (
+                        <div className="mb-2 text-center">
+                          <img
+                            src={form.imagen_url}
+                            alt="imagen actual"
+                            className="img-fluid rounded"
+                            style={{ maxHeight: '150px' }}
+                          />
+                        </div>
+                      )}
+                      {/* Input para nueva imagen */}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="form-control mb-2"
+                        onChange={(e) =>
+                          setForm((f) => ({ ...f, nuevaImagen: e.target.files[0] }))
+                        }
+                      />
+
                       <button
                         className="btn btn-success btn-sm me-2"
                         onClick={() => guardarCambios(evento.id)}
@@ -175,20 +229,19 @@ const MisEventos = () => {
                           {evento.fechainicio} – {evento.fechafin}
                         </p>
                       </div>
-                     <div className="mt-2 mt-md-0 d-grid gap-2 d-md-flex justify-content-md-end">
-  <button
-    className="btn btn-outline-primary btn-sm"
-    onClick={() => comenzarEdicion(evento)}
-  >
-    🖉 Editar
-  </button>
-  <button
-    className="btn btn-outline-danger btn-sm"
-    onClick={() => eliminarEvento(evento.id)}
-  >
-    🗑 Eliminar
-  </button>
-
+                      <div className="mt-2 mt-md-0 d-grid gap-2 d-md-flex justify-content-md-end">
+                        <button
+                          className="btn btn-outline-primary btn-sm"
+                          onClick={() => comenzarEdicion(evento)}
+                        >
+                          🖉 Editar
+                        </button>
+                        <button
+                          className="btn btn-outline-danger btn-sm"
+                          onClick={() => eliminarEvento(evento.id)}
+                        >
+                          🗑 Eliminar
+                        </button>
                       </div>
                     </div>
                   )}
