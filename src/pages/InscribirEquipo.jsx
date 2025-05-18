@@ -213,7 +213,7 @@ const InscribirEquipo = () => {
             if (inscError) throw inscError;
 
             toast.success('Equipo inscrito correctamente.');
-            navigate('/');
+            setTimeout(() => navigate('/'), 3500);
 
 
         } catch (err) {
