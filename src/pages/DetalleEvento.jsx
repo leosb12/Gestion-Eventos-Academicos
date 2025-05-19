@@ -240,13 +240,13 @@ const DetalleEvento = () => {
                         <section className="border rounded p-4 w-100 bg-white shadow-sm">
                             <div className="row row-cols-1 row-cols-sm-1 row-cols-md-2">
                                 <div className="col">
-                                    <p className="text-center fw-semibold mb-2">Empieza en:</p>
+                                    <p className="text-center fw-semibold mb-2">Empieza el:</p>
                                     <p className="text-center fs-5 mb-4">
                                         {new Date(evento.fechainicio).toLocaleDateString()}
                                     </p>
                                 </div>
                                 <div className="col">
-                                    <p className="text-center fw-semibold mb-2">Termina en:</p>
+                                    <p className="text-center fw-semibold mb-2">Termina el:</p>
                                     <p className="text-center fs-5 mb-4">
                                         {new Date(evento.fechafin).toLocaleDateString()}
                                     </p>

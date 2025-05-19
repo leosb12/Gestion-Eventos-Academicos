@@ -41,9 +41,9 @@ const EventosPorTipo = () => {
         <>
             <Navbar/>
             <div className="container my-4">
-                <h2 className="mb-4">Eventos del tipo: {tipoNombre}</h2>
+                <h2 className="mb-4">Categoría: {tipoNombre}</h2>
                 {eventos.length === 0 ? (
-                    <p>No hay eventos disponibles para este tipo.</p>
+                    <p>No hay eventos disponibles de esta categoría.</p>
                 ) : (
                     <div className="row row-cols-1 row-cols-md-3 g-4">
                         {eventos.map((evento) => (
