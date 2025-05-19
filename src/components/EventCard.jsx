@@ -38,7 +38,7 @@ const EventCard = ({evento}) => {
                 <div className="card-body d-flex flex-column">
                     <h5 className="card-title">{evento.nombre}</h5>
                     <p className="card-text">
-                        {descripcionLimitada(evento.descripcion, 200)}
+                        {descripcionLimitada(evento.descripcion, 100)}
                     </p>
                     {fechaInicio && fechaFin && (
                         <p className="text-muted small mb-0">

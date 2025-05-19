@@ -32,8 +32,7 @@ const App = () => {
             {/* Listado de eventos */}
             <Events filtros={filtros}/>
 
-            {/* Toast notifications */}
-            <ToastContainer position="top-right" autoClose={3000}/>
+            
         </>
     );
 };

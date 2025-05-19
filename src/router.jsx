@@ -9,7 +9,7 @@ import CrearEvento from "./pages/CrearEvento.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import NotFound from "./pages/NotFound.jsx";
 import UpdatePassword from "./pages/UpdatePassword.jsx";
-import Perfil from "./pages/Perfil.jsx";
+import EditarPerfil from "./pages/editar-perfil.jsx";
 import DetalleEvento from "./pages/DetalleEvento.jsx";
 import MisEventos from "./pages/MisEventos.jsx";
 import GestionarEventos from './pages/GestionarEventos';
@@ -19,6 +19,7 @@ import DarRol from './pages/DarRol';
 import EliminarUsuario from './pages/eliminar-usuario';
 import EventosPorTipo from './pages/EventosPorTipo';
 import InscribirEquipo from "./pages/InscribirEquipo.jsx";
+import EventosInscritos from './pages/EventosInscritos';
 
 
 export const router = createBrowserRouter([
@@ -37,6 +38,10 @@ export const router = createBrowserRouter([
             {
                 path: "GestionarEventos",
                 element: <GestionarEventos/>
+            },
+            {
+                path: "/eventos-inscritos",
+                element: <EventosInscritos/>
             },
             {
                 path: "iniciar-sesion",
@@ -67,10 +72,10 @@ export const router = createBrowserRouter([
                 element: <UpdatePassword/>
             },
             {
-                path: "perfil",
+                path: "editar-perfil",
                 element: (
                     <PrivateRoute>
-                        <Perfil/>
+                        <EditarPerfil/>
                     </PrivateRoute>
                 )
             },
@@ -167,14 +172,7 @@ export const router = createBrowserRouter([
                 path: "ver-usuarios",
                 element: <VerUsuarios/>
             },
-            {
-                path: "perfil",
-                element: (
-                    <PrivateRoute>
-                        <Perfil/>
-                    </PrivateRoute>
-                )
-            },
+            
             {
                 path: "evento/:id",
                 element: (

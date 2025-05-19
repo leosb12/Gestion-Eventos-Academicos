@@ -39,11 +39,19 @@ const CrearEvento = () => {
 
     const agregarBloqueHorario = () => {
         if (horarioInicio && horarioFin && modalidad && dia) {
+            const inicio = parseInt(horarioInicio);
+            const fin = parseInt(horarioFin);
+
+            if (fin < inicio) {
+                toast.error('La hora de fin debe ser mayor que la hora de inicio.');
+                return;
+            }
+
             setBloquesHorarios(prev => [
                 ...prev,
                 {
-                    id_horario_inicio: parseInt(horarioInicio),
-                    id_horario_fin: parseInt(horarioFin),
+                    id_horario_inicio: inicio,
+                    id_horario_fin: fin,
                     id_modalidad: parseInt(modalidad),
                     id_dia: parseInt(dia)
                 }
@@ -58,6 +66,7 @@ const CrearEvento = () => {
         }
     };
 
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (bloquesHorarios.length === 0) {
@@ -67,6 +76,10 @@ const CrearEvento = () => {
 
         setErrorBloques('');
 
+        if (new Date(fechaFin) < new Date(fechaInicio)) {
+            toast.error('La fecha de fin no puede ser anterior a la fecha de inicio.');
+            return;
+        }
         try {
             if (!user?.email) {
                 toast.error('No hay usuario autenticado.');
@@ -85,6 +98,29 @@ const CrearEvento = () => {
                 return;
             }
 
+            let imagenUrl = null;
+
+            if (imagen) {
+                const fileExt = imagen.name.split('.').pop();
+                const fileName = `${Date.now()}.${fileExt}`;
+                const filePath = fileName;
+
+                const {error: uploadError} = await supabase.storage
+                    .from('event-images')
+                    .upload(filePath, imagen);
+
+                if (uploadError) {
+                    toast.error('Error subiendo la imagen.');
+                    return;
+                }
+
+                const {data: publicUrlData} = supabase.storage
+                    .from('event-images')
+                    .getPublicUrl(filePath);
+
+                imagenUrl = publicUrlData?.publicUrl || null;
+            }
+
             const {data: insertedEvento, error: insertError} = await supabase
                 .from('evento')
                 .insert([{
@@ -96,35 +132,13 @@ const CrearEvento = () => {
                     id_tevento: parseInt(tipoEvento),
                     id_estado: 1,
                     id_usuario_creador: id_usuario,
-                    imagen_url: null
+                    imagen_url: imagenUrl
                 }])
                 .select()
                 .single();
 
             if (insertError) throw insertError;
 
-            if (imagen) {
-                const fileExt = imagen.name.split('.').pop();
-                const fileName = `${Date.now()}.${fileExt}`;
-                const filePath = fileName;
-
-                const {error: uploadError} = await supabase.storage
-                    .from('event-images')
-                    .upload(filePath, imagen);
-
-                if (!uploadError) {
-                    const {data: publicUrlData} = supabase.storage
-                        .from('event-images')
-                        .getPublicUrl(filePath);
-
-                    const imagenUrl = publicUrlData?.publicUrl;
-
-                    await supabase
-                        .from('evento')
-                        .update({imagen_url: imagenUrl})
-                        .eq('id', insertedEvento.id);
-                }
-            }
 
             if (bloquesHorarios.length > 0) {
                 const inserts = bloquesHorarios.map(b => ({
@@ -349,7 +363,17 @@ const CrearEvento = () => {
                             >
                                 {loading ? 'Creando…' : 'Crear Evento'}
                             </button>
+
+                            {tipoUsuario === 1 && (
+                                <div className="alert alert-info mt-4" role="alert">
+                                    <strong>Nota:</strong> Los estudiantes solo pueden crear eventos de
+                                    tipo <em> Evento Informal</em>. Los eventos que creen deberán ser aprobados por un
+                                    administrador antes de publicarse.
+                                </div>
+                            )}
                         </div>
+
+
                     </form>
                 </EventWrapper>
             </AuthBackground>

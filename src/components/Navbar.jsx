@@ -10,7 +10,9 @@ export default function Navbar() {
     const navigate = useNavigate();
     const [showModal, setShowModal] = useState(false);
     const [tiposEvento, setTiposEvento] = useState([]);
-    const [submenuAbierto, setSubmenuAbierto] = useState(false); // 👈 nuevo
+    const [submenuCategoriaAbierto, setSubmenuCategoriaAbierto] = useState(false);
+    const [submenuMisEventosAbierto, setSubmenuMisEventosAbierto] = useState(false);
+
 
     useEffect(() => {
         const fetchTipos = async () => {
@@ -19,6 +21,26 @@ export default function Navbar() {
         };
         fetchTipos();
     }, []);
+    const [usuarioId, setUsuarioId] = useState(null);
+
+    useEffect(() => {
+        const obtenerId = async () => {
+            if (!session?.user?.email) return;
+
+            const {data, error} = await supabase
+                .from('usuario')
+                .select('id')
+                .eq('correo', session.user.email)
+                .maybeSingle();
+
+            if (!error && data) {
+                setUsuarioId(data.id);
+            }
+        };
+
+        obtenerId();
+    }, [session]);
+
 
     const hiddenPaths = ['/iniciar-sesion', '/registro'];
     if (hiddenPaths.includes(location.pathname)) return null;
@@ -81,15 +103,16 @@ export default function Navbar() {
                                         type="button"
                                         className="dropdown-item text-white"
                                         onClick={(e) => {
-                                            e.stopPropagation(); // 👈 esto evita que se cierre el menú "Eventos"
-                                            setSubmenuAbierto(!submenuAbierto);
+                                            e.stopPropagation();
+                                            setSubmenuCategoriaAbierto(!submenuCategoriaAbierto);
+                                            setSubmenuMisEventosAbierto(false); // cierra el otro
                                         }}
                                         style={{width: '100%', textAlign: 'left', background: 'none', border: 'none'}}
                                     >
-                                        Categorias... ▼
+                                        Categorías... ▼
                                     </button>
 
-                                    {submenuAbierto && (
+                                    {submenuCategoriaAbierto && (
                                         <ul className="dropdown-menu show" style={{
                                             position: 'relative',
                                             background: 'transparent',
@@ -113,16 +136,51 @@ export default function Navbar() {
                                 </li>
 
 
-                                <li>
-                                    <NavLink
-                                        to="/mis-eventos"
-                                        className={({isActive}) =>
-                                            `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
-                                        }
+                                <li className="dropdown-submenu">
+                                    <button
+                                        type="button"
+                                        className="dropdown-item text-white"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSubmenuMisEventosAbierto(!submenuMisEventosAbierto);
+                                            setSubmenuCategoriaAbierto(false); // cierra el otro
+                                        }}
+                                        style={{width: '100%', textAlign: 'left', background: 'none', border: 'none'}}
                                     >
-                                        Mis Eventos
-                                    </NavLink>
+                                        Mis Eventos ▼
+                                    </button>
+
+                                    {submenuMisEventosAbierto && (
+                                        <ul className="dropdown-menu show" style={{
+                                            position: 'relative',
+                                            background: 'transparent',
+                                            border: 'none',
+                                            boxShadow: 'none'
+                                        }}>
+                                            <li>
+                                                <NavLink
+                                                    to="/mis-eventos"
+                                                    className={({isActive}) =>
+                                                        `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                                                    }
+                                                >
+                                                    Eventos Creados
+                                                </NavLink>
+                                            </li>
+                                            <li>
+                                                <NavLink
+                                                    to="/eventos-inscritos"
+                                                    className={({isActive}) =>
+                                                        `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                                                    }
+                                                >
+                                                    Eventos Inscritos
+                                                </NavLink>
+                                            </li>
+                                        </ul>
+                                    )}
                                 </li>
+
 
                                 {session && (
                                     <>
@@ -218,12 +276,23 @@ export default function Navbar() {
                                 <ul className="dropdown-menu bg-primary border-0 shadow-none">
                                     <li>
                                         <NavLink
-                                            to="/perfil"
+                                            to={`/perfil-usuario/${usuarioId}`}
                                             className={({isActive}) =>
                                                 `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
                                             }
                                         >
+
                                             Ver Perfil
+                                        </NavLink>
+                                    </li>
+                                    <li>
+                                        <NavLink
+                                            to="/editar-perfil"
+                                            className={({isActive}) =>
+                                                `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                                            }
+                                        >
+                                            Editar Perfil
                                         </NavLink>
                                     </li>
                                     <li>
@@ -238,6 +307,7 @@ export default function Navbar() {
                                 </ul>
                             </li>
                         )}
+
 
                         <li className="nav-item d-none d-lg-block align-self-center">
                             <BuscadorEventos/>

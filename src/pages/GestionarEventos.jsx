@@ -89,6 +89,7 @@ const GestionarEventos = () => {
         }
     };
 
+
     const iniciarEdicion = (evento) => {
         setEditandoId(evento.id);
         setForm({

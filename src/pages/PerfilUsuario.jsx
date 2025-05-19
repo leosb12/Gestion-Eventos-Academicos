@@ -25,11 +25,19 @@ const PerfilUsuario = () => {
 
             const {data: userData, error: errorUser} = await supabase
                 .from('usuario')
-                .select('id_tipo_usuario')
+                .select('id, id_tipo_usuario')
                 .eq('correo', correo)
                 .single();
 
-            if (errorUser || !userData || userData.id_tipo_usuario !== 7) {
+            if (errorUser || !userData) {
+                navigate('/');
+                return;
+            }
+
+            const esAdmin = userData.id_tipo_usuario === 7;
+            const esPropioPerfil = String(userData.id) === id;
+
+            if (!esAdmin && !esPropioPerfil) {
                 navigate('/');
                 return;
             }
@@ -38,7 +46,7 @@ const PerfilUsuario = () => {
         };
 
         verificarPermiso();
-    }, [navigate]);
+    }, [navigate, id]);
 
     useEffect(() => {
         const cargarDatos = async () => {
