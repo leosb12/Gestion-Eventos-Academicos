@@ -98,6 +98,16 @@ const PerfilUsuario = () => {
     if (!verificado) return <p className="text-center mt-5">Verificando acceso...</p>;
     if (cargando) return <p className="text-center mt-5">Cargando perfil...</p>;
     if (!usuario) return <p className="text-center mt-5">Usuario no encontrado</p>;
+    const calcularEdad = (fechaNacimiento) => {
+        const hoy = new Date();
+        const nacimiento = new Date(fechaNacimiento);
+        let edad = hoy.getFullYear() - nacimiento.getFullYear();
+        const mesDiferencia = hoy.getMonth() - nacimiento.getMonth();
+        if (mesDiferencia < 0 || (mesDiferencia === 0 && hoy.getDate() < nacimiento.getDate())) {
+            edad--;
+        }
+        return edad;
+    };
 
     return (
         <>
@@ -108,8 +118,12 @@ const PerfilUsuario = () => {
                     <li className="list-group-item"><strong>ID:</strong> {usuario.id}</li>
                     <li className="list-group-item"><strong>Nombre:</strong> {usuario.nombre}</li>
                     <li className="list-group-item"><strong>Correo:</strong> {usuario.correo}</li>
-                    <li className="list-group-item"><strong>Fecha de
-                        nacimiento:</strong> {new Date(usuario.fecha_nacimiento).toLocaleDateString()}</li>
+                    <li className="list-group-item">
+                        <strong>Fecha de nacimiento:</strong> {new Date(usuario.fecha_nacimiento).toLocaleDateString()}
+                    </li>
+                    <li className="list-group-item">
+                        <strong>Edad:</strong> {calcularEdad(usuario.fecha_nacimiento)} años
+                    </li>
                     <li className="list-group-item"><strong>Rol:</strong> {usuario.tipousuario?.nombre || 'Desconocido'}
                     </li>
                 </ul>
