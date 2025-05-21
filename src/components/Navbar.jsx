@@ -200,7 +200,7 @@ export default function Navbar() {
                                         {(tipoUsuario === 6 || tipoUsuario === 7) && (
                                             <li>
                                                 <NavLink
-                                                    to="/GestionarEventos"
+                                                    to="/gestionar-eventos"
                                                     className={({isActive}) =>
                                                         `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
                                                     }

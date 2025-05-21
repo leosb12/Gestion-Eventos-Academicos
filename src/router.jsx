@@ -20,183 +20,148 @@ import EliminarUsuario from './pages/eliminar-usuario';
 import EventosPorTipo from './pages/EventosPorTipo';
 import InscribirEquipo from "./pages/InscribirEquipo.jsx";
 import EventosInscritos from './pages/EventosInscritos';
+import PublicRoute from "./components/PublicRoute.jsx";
 
 
 export const router = createBrowserRouter([
     {
-        path: "/",
-        element: <MainLayout/>,
+       path: "/",
+        element: <MainLayout />,
         children: [
-            {
-                index: true,
-                element: (
-                    <PrivateRoute>
-                        <App/>
-                    </PrivateRoute>
-                )
-            },
-            {
-                path: "GestionarEventos",
-                element: <GestionarEventos/>
-            },
-            {
-                path: "/eventos-inscritos",
-                element: <EventosInscritos/>
-            },
-            {
-                path: "iniciar-sesion",
-                element: <Login/>
-            },
-            {
-                path: "registro",
-                element: <Register/>
-            },
-            {
-                path: "crear-evento",
-                element: (
-                    <PrivateRoute>
-                        <CrearEvento/>
-                    </PrivateRoute>
-                )
-            },
-            {
-                path: "dashboard",
-                element: (
-                    <PrivateRoute>
-                        <Dashboard/>
-                    </PrivateRoute>
-                )
-            },
-            {
-                path: "update-password",
-                element: <UpdatePassword/>
-            },
-            {
-                path: "editar-perfil",
-                element: (
-                    <PrivateRoute>
-                        <EditarPerfil/>
-                    </PrivateRoute>
-                )
-            },
-            {
-                path: "evento/:id",
-                element: (
-                    <PrivateRoute>
-                        <DetalleEvento/>
-                    </PrivateRoute>
-                )
-            },
-            {
-                path: "mis-eventos",
-                element: (
-                    <PrivateRoute>
-                        <MisEventos/>
-                    </PrivateRoute>
-                )
-            },
-            {
-                path: "inscribir-equipo/:id",
-                element: (
-                    <PrivateRoute>
-                        <InscribirEquipo/>
-                    </PrivateRoute>
-                )
-            }
+
+          { path: "iniciar-sesion",
+            element:(
+                <PublicRoute>
+                    <Login />
+                </PublicRoute>
+            )
+          },
+          { path: "registro",
+            element:(
+                <PublicRoute>
+                    <Register />
+                </PublicRoute>
+            )
+          },
+          { path: "update-password", element: <UpdatePassword /> },
+
+          {
+            index: true,
+            element: (
+              <PrivateRoute>
+                <App />
+              </PrivateRoute>
+            )
+          },
+          {
+            path: "dashboard",
+            element: (
+              <PrivateRoute>
+                <Dashboard />
+              </PrivateRoute>
+            )
+          },
+          {
+            path: "crear-evento",
+            element: (
+              <PrivateRoute>
+                <CrearEvento />
+              </PrivateRoute>
+            )
+          },
+          {
+            path: "gestionar-eventos",
+            element: (
+              <PrivateRoute>
+                <GestionarEventos />
+              </PrivateRoute>
+            )
+          },
+          {
+            path: "mis-eventos",
+            element: (
+              <PrivateRoute>
+                <MisEventos />
+              </PrivateRoute>
+            )
+          },
+          {
+            path: "eventos-inscritos",
+            element: (
+              <PrivateRoute>
+                <EventosInscritos />
+              </PrivateRoute>
+            )
+          },
+          {
+            path: "evento/:id",
+            element: (
+              <PrivateRoute>
+                <DetalleEvento />
+              </PrivateRoute>
+            )
+          },
+          {
+            path: "inscribir-equipo/:id",
+            element: (
+              <PrivateRoute>
+                <InscribirEquipo />
+              </PrivateRoute>
+            )
+          },
+          {
+            path: "eventos-tipo/:id",
+            element: (
+              <PrivateRoute>
+                <EventosPorTipo />
+              </PrivateRoute>
+            )
+          },
+          {
+            path: "ver-usuarios",
+            element: (
+              <PrivateRoute>
+                <VerUsuarios />
+              </PrivateRoute>
+            )
+          },
+          {
+            path: "perfil-usuario/:id",
+            element: (
+              <PrivateRoute>
+                <PerfilUsuario />
+              </PrivateRoute>
+            )
+          },
+          {
+            path: "dar-rol",
+            element: (
+              <PrivateRoute>
+                <DarRol />
+              </PrivateRoute>
+            )
+          },
+          {
+            path: "eliminar-usuario",
+            element: (
+              <PrivateRoute>
+                <EliminarUsuario />
+              </PrivateRoute>
+            )
+          },
+          {
+            path: "editar-perfil",
+            element: (
+              <PrivateRoute>
+                <DarRol />
+              </PrivateRoute>
+            )
+          }
         ]
-
-    },
-    {
+      },
+      // fallback 404
+      {
         path: "*",
-        element: <NotFound/>
-    },
-    {
-        path: "/",
-        element: <MainLayout/>,
-        children: [
-            {
-                index: true,
-                element: (
-                    <PrivateRoute>
-                        <App/>
-                    </PrivateRoute>
-                )
-            },
-            {
-                path: "GestionarEventos",
-                element: <GestionarEventos/>
-            },
-            {
-                path: '/eventos-tipo/:id',
-                element: <EventosPorTipo/>
-            },
-            {
-                path: 'eliminar-usuario',
-                element: <EliminarUsuario/>
-            },
-            {
-                path: "iniciar-sesion",
-                element: <Login/>
-            },
-            {
-                path: "registro",
-                element: <Register/>
-            },
-            {
-                path: "crear-evento",
-                element: (
-                    <PrivateRoute>
-                        <CrearEvento/>
-                    </PrivateRoute>
-                )
-            },
-            {
-                path: "dashboard",
-                element: (
-                    <PrivateRoute>
-                        <Dashboard/>
-                    </PrivateRoute>
-                )
-            },
-
-            {
-                path: 'dar-rol',
-                element: <DarRol/>
-            },
-
-            {
-                path: "update-password",
-                element: <UpdatePassword/>
-            },
-            {
-                path: "ver-usuarios",
-                element: <VerUsuarios/>
-            },
-            
-            {
-                path: "evento/:id",
-                element: (
-                    <PrivateRoute>
-                        <DetalleEvento/>
-                    </PrivateRoute>
-                )
-            },
-            {
-                path: "perfil-usuario/:id",
-                element: <PerfilUsuario/>
-            },
-            {
-                path: "mis-eventos",
-                element: (
-                    <PrivateRoute>
-                        <MisEventos/>
-                    </PrivateRoute>
-                )
-            }
-        ]
-    },
-    {
-        path: "*",
-        element: <NotFound/>
-    }
+        element: <NotFound />
+      }
 ]);

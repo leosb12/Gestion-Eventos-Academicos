@@ -11,7 +11,7 @@ createRoot(document.getElementById('root')).render(
         <AuthContextProvider>
             <>
                 <RouterProvider router={router}/>
-                <ToastContainer position="top-right" autoClose={3000}/>
+                <ToastContainer hideProgressBar="true" position="top-right" autoClose={3000}/>
             </>
         </AuthContextProvider>
     </StrictMode>,
