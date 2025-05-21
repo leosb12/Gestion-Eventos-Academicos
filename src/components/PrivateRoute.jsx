@@ -11,8 +11,8 @@ const PrivateRoute = ({ children }) => {
   }
 
   return auth.session
-    ? <>{children}</>
-    : <Navigate to="/iniciar-sesion" />;
-};
+      ? <>{children}</>
+      : <Navigate to="/iniciar-sesion" replace/>;
+  };
 
 export default PrivateRoute;
