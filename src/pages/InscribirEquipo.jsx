@@ -93,38 +93,20 @@ const InscribirEquipo = () => {
         setLoading(true);
 
         try {
-            const {data: equipoNombre, error: nombreError} = await supabase
+            const {data: equiposMismoNombre, error: nombreError} = await supabase
                 .from('equipo')
                 .select('id')
-                .eq('nombre', nombreEquipo);
+                .ilike('nombre', nombreEquipo.trim())
+                .eq('id_evento', parseInt(idEvento));
 
             if (nombreError) throw nombreError;
 
-            if (equipoNombre.length > 0) {
-                const {data: relacionados, error: relError} = await supabase
-                    .from('nivelgrupo')
-                    .select('id_equipo')
-                    .in('id_equipo', equipoNombre.map(e => e.id));
-
-                if (relError) throw relError;
-
-                const {data: yaInscritos, error: inscError} = await supabase
-                    .from('inscripcionevento')
-                    .select('id_usuario')
-                    .eq('id_evento', parseInt(idEvento));
-
-                if (inscError) throw inscError;
-
-                const usadosEnEsteEvento = yaInscritos
-                    .map(i => i.id_usuario)
-                    .filter(id => miembrosNumeros.includes(id));
-
-                if (usadosEnEsteEvento.length > 0) {
-                    toast.error('Ya existe un equipo con ese nombre en este evento.');
-                    setLoading(false);
-                    return;
-                }
+            if (equiposMismoNombre.length > 0) {
+                toast.error('Ya existe un equipo con ese nombre en este evento.');
+                setLoading(false);
+                return;
             }
+
 
             const {data: usuariosValidos, error: valError} = await supabase
                 .from('usuario')
@@ -170,10 +152,12 @@ const InscribirEquipo = () => {
                 .from('equipo')
                 .insert({
                     nombre: nombreEquipo,
-                    id_lider: usuarioId // ✅ este es el campo nuevo
+                    id_lider: usuarioId,
+                    id_evento: parseInt(idEvento) // ✅ agregar el vínculo con el evento
                 })
                 .select()
                 .single();
+
 
             if (eqInsertError) throw eqInsertError;
             const idEquipo = equipoData.id;
@@ -223,6 +207,25 @@ const InscribirEquipo = () => {
             setLoading(false);
         }
     };
+
+    const [tipoEvento, setTipoEvento] = useState(null);
+
+    useEffect(() => {
+        const obtenerTipoEvento = async () => {
+            const {data, error} = await supabase
+                .from('evento')
+                .select('id_tevento')
+                .eq('id', idEvento)
+                .maybeSingle();
+
+            if (!error && data) {
+                setTipoEvento(data.id_tevento);
+            }
+        };
+
+        obtenerTipoEvento();
+    }, [idEvento]);
+
 
     return (
         <>
@@ -303,9 +306,28 @@ const InscribirEquipo = () => {
                         </div>
 
                         <div className="text-center">
-                            <button type="submit" className="btn btn-primary px-5" disabled={loading}>
-                                {loading ? 'Inscribiendo…' : 'Inscribir Equipo'}
-                            </button>
+                            {tipoEvento === 2 ? ( // 2 = Feria
+                                <button
+                                    type="button"
+                                    className="btn btn-primary px-5"
+                                    onClick={() => {
+                                        // Guardar los datos temporalmente y redirigir
+                                        navigate(`/definir-proyecto/${idEvento}`, {
+                                            state: {
+                                                nombreEquipo,
+                                                nivelSeleccionado,
+                                                miembros
+                                            }
+                                        });
+                                    }}
+                                >
+                                    Definir Proyecto
+                                </button>
+                            ) : (
+                                <button type="submit" className="btn btn-primary px-5" disabled={loading}>
+                                    {loading ? 'Inscribiendo…' : 'Inscribir Equipo'}
+                                </button>
+                            )}
                         </div>
                     </form>
                     <ToastContainer position="top-right" autoClose={3000}/>
