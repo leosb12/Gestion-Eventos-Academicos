@@ -119,7 +119,8 @@ const PerfilUsuario = () => {
                     <li className="list-group-item"><strong>Nombre:</strong> {usuario.nombre}</li>
                     <li className="list-group-item"><strong>Correo:</strong> {usuario.correo}</li>
                     <li className="list-group-item">
-                        <strong>Fecha de nacimiento:</strong> {new Date(usuario.fecha_nacimiento).toLocaleDateString()}
+                        <strong>Fecha de nacimiento:</strong> {usuario.fecha_nacimiento.split('-').reverse().join('/')}
+
                     </li>
                     <li className="list-group-item">
                         <strong>Edad:</strong> {calcularEdad(usuario.fecha_nacimiento)} años

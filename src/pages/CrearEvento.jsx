@@ -80,7 +80,10 @@ const CrearEvento = () => {
             toast.error('La fecha de fin no puede ser anterior a la fecha de inicio.');
             return;
         }
+        setLoading(true); // 🔐 Previene múltiples clics
         try {
+
+
             if (!user?.email) {
                 toast.error('No hay usuario autenticado.');
                 return;
@@ -150,8 +153,9 @@ const CrearEvento = () => {
                 await supabase.from('horarioevento').insert(inserts);
             }
 
-            toast.success('Evento creado correctamente');
-            navigate('/');
+            toast.dismiss(); // por si había uno pendiente
+            navigate('/', {state: {eventoCreado: true}});
+
         } catch (err) {
             toast.error('Error creando evento');
             console.error(err);
@@ -188,7 +192,7 @@ const CrearEvento = () => {
                                 >
                                     <option value="">S</option>
                                     {horarios.map(h => (
-                                        <option key={h.id} value={h.id}>{h.hora}</option>
+                                        <option key={h.id} value={h.id}>{h.hora.slice(0, 5)}</option>
                                     ))}
                                 </select>
                             </div>
@@ -202,7 +206,7 @@ const CrearEvento = () => {
                                 >
                                     <option value="">S</option>
                                     {horarios.map(h => (
-                                        <option key={h.id} value={h.id}>{h.hora}</option>
+                                        <option key={h.id} value={h.id}>{h.hora.slice(0, 5)}</option>
                                     ))}
                                 </select>
                             </div>
@@ -249,8 +253,8 @@ const CrearEvento = () => {
                         <ul>
                             {bloquesHorarios.map((b, i) => {
                                 const diaNombre = ["", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"][b.id_dia];
-                                const inicioHora = horarios.find(h => h.id === b.id_horario_inicio)?.hora || b.id_horario_inicio;
-                                const finHora = horarios.find(h => h.id === b.id_horario_fin)?.hora || b.id_horario_fin;
+                                const inicioHora = (horarios.find(h => h.id === b.id_horario_inicio)?.hora || '').slice(0, 5) || b.id_horario_inicio;
+                                const finHora = (horarios.find(h => h.id === b.id_horario_fin)?.hora || '').slice(0, 5) || b.id_horario_fin;
                                 const modalidadTexto = {
                                     1: "Presencial",
                                     2: "Virtual",
