@@ -18,6 +18,9 @@ const DetalleEvento = () => {
     const [usuarioId, setUsuarioId] = useState(null)
     const [estaInscrito, setEstaInscrito] = useState(false)
     const [mostrarModalCancelar, setMostrarModalCancelar] = useState(false)
+    const [equiposIncompletos, setEquiposIncompletos] = useState([]);
+    const [inscripcionCargando, setInscripcionCargando] = useState(true);
+
 
     useEffect(() => {
         fetchEvento()
@@ -34,6 +37,15 @@ const DetalleEvento = () => {
             verificarInscripcion()
         }
     }, [evento, usuarioId])
+
+    useEffect(() => {
+        if (evento && evento.id_tevento && !estaInscrito) {
+            const tipo = parseInt(evento.id_tevento)
+            if (tipo === 2 || tipo === 4) {
+                fetchEquiposIncompletos(evento.id)
+            }
+        }
+    }, [evento, estaInscrito])
 
     const obtenerUsuarioId = async () => {
         const {data, error} = await supabase
@@ -82,6 +94,46 @@ const DetalleEvento = () => {
         if (!error) setHorarios(data)
     }
 
+    const fetchEquiposIncompletos = async (eventoId) => {
+        const {data: equipos, error} = await supabase
+            .from('equipo')
+            .select(`
+            id,
+            nombre,
+            id_lider,
+            usuario:usuario!id_lider (
+                nombre
+            ),
+            nivelgrupo (
+                id_nivel,
+                nivel:nivel!id (
+                    nombre
+                )
+            ),
+            miembrosequipo (
+                id_usuario
+            )
+        `)
+            .eq('id_evento', eventoId)
+
+        if (error) {
+            toast.error('Error al cargar equipos.')
+            return
+        }
+
+        const incompletos = (equipos || [])
+            .map(eq => ({
+                id: eq.id,
+                nombre: eq.nombre,
+                nivel: eq.nivelgrupo?.[0]?.nivel?.nombre || '-',
+                cantidad: eq.miembrosequipo?.length || 0,
+                lider: eq.usuario?.nombre || '-'
+            }))
+            .filter(eq => eq.cantidad < 6);
+
+        setEquiposIncompletos(incompletos)
+    }
+
     const verificarInscripcion = async () => {
         const {data, error} = await supabase
             .from('inscripcionevento')
@@ -92,6 +144,7 @@ const DetalleEvento = () => {
         if (!error) {
             setEstaInscrito(data.length > 0)
         }
+        setInscripcionCargando(false);
     }
 
     const manejarInscripcion = async () => {
@@ -146,6 +199,10 @@ const DetalleEvento = () => {
 
                 const idsMiembros = miembros.map(m => m.id_usuario);
 
+                // Eliminar proyecto si existe
+                await supabase.from('proyecto').delete().eq('id_equipo', equipo.id);
+
+// Eliminar inscripciones y relaciones
                 await supabase.from('inscripcionevento').delete().in('id_usuario', idsMiembros).eq('id_evento', id);
                 await supabase.from('miembrosequipo').delete().eq('id_equipo', equipo.id);
                 await supabase.from('nivelgrupo').delete().eq('id_equipo', equipo.id);
@@ -170,6 +227,43 @@ const DetalleEvento = () => {
             toast.error('Error al cancelar la inscripción.');
         } finally {
             setMostrarModalCancelar(false);
+        }
+    };
+
+    const unirseAEquipo = async (equipoId) => {
+        try {
+            // Validar que no esté ya inscrito (por seguridad extra)
+            const {data: yaInscrito, error: errorInscrito} = await supabase
+                .from('inscripcionevento')
+                .select('id_usuario')
+                .eq('id_evento', id)
+                .eq('id_usuario', usuarioId);
+
+            if (errorInscrito) throw errorInscrito;
+            if (yaInscrito.length > 0) {
+                toast.info('Ya estás inscrito en este evento.');
+                return;
+            }
+
+            // Insertar en inscripcionevento
+            const {error: inscError} = await supabase
+                .from('inscripcionevento')
+                .insert({id_evento: parseInt(id), id_usuario: usuarioId});
+
+            if (inscError) throw inscError;
+
+            // Insertar en miembrosequipo
+            const {error: miembroError} = await supabase
+                .from('miembrosequipo')
+                .insert({id_equipo: equipoId, id_usuario: usuarioId});
+
+            if (miembroError) throw miembroError;
+
+            toast.success('Te uniste al equipo exitosamente.');
+            setEstaInscrito(true);
+        } catch (error) {
+            console.error(error);
+            toast.error('Hubo un error al intentar unirte al equipo.');
         }
     };
 
@@ -253,12 +347,14 @@ const DetalleEvento = () => {
                                 </div>
                             </div>
                             <div className="d-flex justify-content-center">
-                                <button
-                                    className={`btn ${estaInscrito ? 'btn-secondary' : 'btn-primary'} px-4`}
-                                    onClick={manejarInscripcion}
-                                >
-                                    {estaInscrito ? 'Cancelar inscripción' : 'Inscribirse'}
-                                </button>
+                                {!inscripcionCargando && (
+                                    <button
+                                        className={`btn ${estaInscrito ? 'btn-secondary' : 'btn-primary'} px-4`}
+                                        onClick={manejarInscripcion}
+                                    >
+                                        {estaInscrito ? 'Cancelar inscripción' : 'Inscribirse'}
+                                    </button>
+                                )}
                             </div>
                         </section>
                     </div>
@@ -284,6 +380,56 @@ const DetalleEvento = () => {
                         )}
                     </div>
                 </section>
+                {!inscripcionCargando && (evento.id_tevento === 2 || evento.id_tevento === 4) && !estaInscrito && (
+                    <section className="d-flex justify-content-center align-items-start mt-3 p-3">
+                        <div className="bg-white p-5 p-md-5 rounded-5 shadow"
+                             style={{maxWidth: '55rem', width: '100%'}}>
+                            <h3 className="text-center fw-bold mb-4">Equipos con cupos disponibles</h3>
+                            {equiposIncompletos.length === 0 ? (
+                                <p className="text-center text-muted">No hay equipos con cupos disponibles.</p>
+                            ) : (
+                                <div className="row g-3">
+                                    {equiposIncompletos.map((equipo, i) => (
+                                        <div key={i} className="col-12 border rounded p-3 shadow-sm bg-light">
+                                            <div
+                                                className="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center text-start text-md-start">
+                                                <div className="flex-grow-1 mb-2 mb-md-0">
+                                                    <p className="mb-1 text-nowrap d-flex">
+                                                        <span className="fw-bold me-1">Equipo:</span>
+                                                        <span>{equipo.nombre}</span>
+                                                    </p>
+                                                    <p className="mb-1 text-nowrap d-flex">
+                                                        <span className="fw-bold me-1">Nivel:</span>
+                                                        <span>{equipo.nivel}</span>
+                                                    </p>
+                                                    <p className="mb-1 text-nowrap d-flex">
+                                                        <span className="fw-bold me-1">Miembros:</span>
+                                                        <span>{equipo.cantidad} / 6</span>
+                                                    </p>
+                                                    <p className="mb-1 text-nowrap d-flex">
+                                                        <span className="fw-bold me-1">Líder:</span>
+                                                        <span>{equipo.lider}</span>
+                                                    </p>
+                                                </div>
+                                                <div
+                                                    className="w-100 w-md-auto d-flex align-items-md-center justify-content-center justify-content-md-end mt-3 mt-md-0">
+                                                    <button
+                                                        className="btn btn-primary"
+                                                        style={{width: '200px'}}
+                                                        onClick={() => unirseAEquipo(equipo.id)}
+                                                    >
+                                                        Unirse al Equipo
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </section>
+                )}
+
             </div>
             <ToastContainer position="top-right" autoClose={3000}/>
         </>
