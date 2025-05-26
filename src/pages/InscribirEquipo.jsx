@@ -8,6 +8,7 @@ import {toast} from 'react-toastify';
 import {ToastContainer} from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import {UserAuth} from '../context/AuthContext';
+import {useLocation} from 'react-router-dom';
 
 const InscribirEquipo = () => {
     const {id: idEvento} = useParams();
@@ -21,6 +22,19 @@ const InscribirEquipo = () => {
     const [numMiembros, setNumMiembros] = useState(1);
     const [miembros, setMiembros] = useState([]);
     const [loading, setLoading] = useState(false);
+    const location = useLocation();
+
+    useEffect(() => {
+        if (location.state) {
+            const {nombreEquipo, nivelSeleccionado, miembros} = location.state;
+            if (nombreEquipo) setNombreEquipo(nombreEquipo);
+            if (nivelSeleccionado) setNivelSeleccionado(nivelSeleccionado);
+            if (Array.isArray(miembros) && miembros.length > 0) {
+                setMiembros(miembros);
+                setNumMiembros(miembros.length);
+            }
+        }
+    }, [location.state]);
 
     useEffect(() => {
         const obtenerUsuario = async () => {
@@ -53,14 +67,94 @@ const InscribirEquipo = () => {
     }, []);
 
     useEffect(() => {
-        if (usuarioId) {
-            const nuevosMiembros = Array.from({length: numMiembros}, (_, i) => {
-                if (i === 0) return usuarioId;
-                return '';
-            });
-            setMiembros(nuevosMiembros);
-        }
+        if (!usuarioId) return;
+
+        setMiembros(prev => {
+            let actualizados = [...prev];
+
+            // Asegurar que el primer miembro siempre sea el usuario actual
+            actualizados[0] = usuarioId;
+
+            // Si hay más miembros de los necesarios, recortar
+            if (actualizados.length > numMiembros) {
+                actualizados = actualizados.slice(0, numMiembros);
+            }
+
+            // Si faltan miembros, añadir vacíos
+            while (actualizados.length < numMiembros) {
+                actualizados.push('');
+            }
+
+            return actualizados;
+        });
     }, [numMiembros, usuarioId]);
+
+
+    const handleDefinirProyecto = async () => {
+        if (!nombreEquipo || !nivelSeleccionado || miembros.length === 0) {
+            toast.error('Completa todos los campos.');
+            return;
+        }
+
+        if (new Set(miembros).size !== miembros.length) {
+            toast.error('Hay miembros duplicados.');
+            return;
+        }
+
+        const miembrosNumeros = miembros
+            .map(id => parseInt(id))
+            .filter(id => Number.isInteger(id) && id > 0);
+
+        if (miembrosNumeros.length !== miembros.length) {
+            toast.error('Todos los registros deben ser números válidos.');
+            return;
+        }
+
+        const {data: usuariosValidos, error: valError} = await supabase
+            .from('usuario')
+            .select('id')
+            .in('id', miembrosNumeros);
+
+        if (valError) {
+            toast.error('Error al validar los registros.');
+            return;
+        }
+
+        const idsValidos = usuariosValidos.map(u => u.id);
+        const idsInvalidos = miembrosNumeros.filter(id => !idsValidos.includes(id));
+
+        if (idsInvalidos.length > 0) {
+            toast.error(`Registro inválido: los siguientes ID no existen: ${idsInvalidos.join(', ')}`);
+            return;
+        }
+
+        const {data: inscritos, error: yaInsError} = await supabase
+            .from('inscripcionevento')
+            .select('id_usuario')
+            .eq('id_evento', parseInt(idEvento));
+
+        if (yaInsError) {
+            toast.error('Error al verificar inscripciones previas.');
+            return;
+        }
+
+        const conflicto = miembrosNumeros.filter(id =>
+            inscritos.some(i => i.id_usuario === id)
+        );
+
+        if (conflicto.length > 0) {
+            toast.error(`Usuarios ya inscritos: ${conflicto.join(', ')}`);
+            return;
+        }
+
+        navigate(`/definir-proyecto/${idEvento}`, {
+            state: {
+                nombreEquipo,
+                nivelSeleccionado,
+                miembros
+            }
+        });
+    };
 
     const handleChangeMiembro = (index, value) => {
         const actualizados = [...miembros];
@@ -153,7 +247,7 @@ const InscribirEquipo = () => {
                 .insert({
                     nombre: nombreEquipo,
                     id_lider: usuarioId,
-                    id_evento: parseInt(idEvento) // ✅ agregar el vínculo con el evento
+                    id_evento: parseInt(idEvento)
                 })
                 .select()
                 .single();
@@ -306,22 +400,13 @@ const InscribirEquipo = () => {
                         </div>
 
                         <div className="text-center">
-                            {tipoEvento === 2 ? ( // 2 = Feria
+                            {tipoEvento === 2 ? (
                                 <button
                                     type="button"
                                     className="btn btn-primary px-5"
-                                    onClick={() => {
-                                        // Guardar los datos temporalmente y redirigir
-                                        navigate(`/definir-proyecto/${idEvento}`, {
-                                            state: {
-                                                nombreEquipo,
-                                                nivelSeleccionado,
-                                                miembros
-                                            }
-                                        });
-                                    }}
+                                    onClick={handleDefinirProyecto}
                                 >
-                                    Definir Proyecto
+                                    Guardar Equipo
                                 </button>
                             ) : (
                                 <button type="submit" className="btn btn-primary px-5" disabled={loading}>
