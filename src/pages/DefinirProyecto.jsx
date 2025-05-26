@@ -113,6 +113,21 @@ const DefinirProyecto = () => {
             <Navbar/>
             <AuthBackground>
                 <EventWrapper title="DEFINIR PROYECTO">
+                    <div className="mb-3">
+                        <button
+                            type="button"
+                            className="btn btn-primary"
+                            onClick={() => navigate(`/inscribir-equipo/${idEvento}`, {
+                                state: {
+                                    nombreEquipo,
+                                    nivelSeleccionado,
+                                    miembros
+                                }
+                            })}
+                        >
+                            ← Volver al equipo
+                        </button>
+                    </div>
                     <form onSubmit={handleSubmit}>
                         <div className="mb-3">
                             <label className="form-label">Nombre del Proyecto:</label>

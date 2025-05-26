@@ -20,7 +20,7 @@ const DetalleEvento = () => {
     const [mostrarModalCancelar, setMostrarModalCancelar] = useState(false)
     const [equiposIncompletos, setEquiposIncompletos] = useState([]);
     const [inscripcionCargando, setInscripcionCargando] = useState(true);
-
+    const [refresco, setRefresco] = useState(0);
 
     useEffect(() => {
         fetchEvento()
@@ -36,7 +36,7 @@ const DetalleEvento = () => {
         if (evento && usuarioId) {
             verificarInscripcion()
         }
-    }, [evento, usuarioId])
+    }, [evento, usuarioId, refresco])
 
     useEffect(() => {
         if (evento && evento.id_tevento && !estaInscrito) {
@@ -46,6 +46,32 @@ const DetalleEvento = () => {
             }
         }
     }, [evento, estaInscrito])
+
+    useEffect(() => {
+        if (!usuarioId || !evento) return;
+
+        const canal = supabase
+            .channel('inscripcion_realtime')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'inscripcionevento',
+                    filter: `id_usuario=eq.${usuarioId}`
+                },
+                (payload) => {
+                    if (payload.new?.id_evento === parseInt(id) || payload.old?.id_evento === parseInt(id)) {
+                        setRefresco(prev => prev + 1);
+                    }
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(canal);
+        };
+    }, [usuarioId, evento]);
 
     const obtenerUsuarioId = async () => {
         const {data, error} = await supabase
@@ -148,37 +174,59 @@ const DetalleEvento = () => {
     }
 
     const manejarInscripcion = async () => {
-        if (!evento || !usuarioId) return
+        if (!evento || !usuarioId) return;
 
-        const tipoEvento = parseInt(evento?.id_tevento ?? 0)
-        const estadoEvento = parseInt(evento?.id_estado ?? 0)
-
-        if (estadoEvento !== 1) {
-            toast.warning('Este evento no está disponible para inscripción.')
-            return
-        }
-
-        if ((tipoEvento === 4 || tipoEvento === 2) && !estaInscrito) {
-            toast.info('Redirigiendo a la inscripción por equipo...')
-            navigate(`/inscribir-equipo/${id}`)
-            return
-        }
-
-        if (!estaInscrito) {
-            const {error} = await supabase
+        try {
+            // Verificación adicional segura
+            const {data: check, error: errorCheck} = await supabase
                 .from('inscripcionevento')
-                .insert({id_evento: parseInt(id), id_usuario: usuarioId})
+                .select('id_evento')
+                .eq('id_evento', id)
+                .eq('id_usuario', usuarioId);
 
-            if (!error) {
-                toast.success('Inscripción completada.')
-                setEstaInscrito(true)
-            } else {
-                toast.error('Error al inscribirse al evento.')
+            if (errorCheck) {
+                console.error(errorCheck);
+                toast.error('No se pudo verificar la inscripción actual.');
+                return;
             }
-        } else {
-            setMostrarModalCancelar(true)
+
+            const yaInscrito = Array.isArray(check) && check.length > 0;
+            setEstaInscrito(yaInscrito);
+
+            const tipoEvento = parseInt(evento?.id_tevento ?? 0);
+            const estadoEvento = parseInt(evento?.id_estado ?? 0);
+
+            if (estadoEvento !== 1) {
+                toast.warning('Este evento no está disponible para inscripción.');
+                return;
+            }
+
+            if ((tipoEvento === 4 || tipoEvento === 2) && !yaInscrito) {
+                toast.info('Redirigiendo a la inscripción por equipo...');
+                navigate(`/inscribir-equipo/${id}`);
+                return;
+            }
+
+            if (!yaInscrito) {
+                const {error} = await supabase
+                    .from('inscripcionevento')
+                    .insert({id_evento: parseInt(id), id_usuario: usuarioId});
+
+                if (!error) {
+                    toast.success('Inscripción completada.');
+                    setEstaInscrito(true);
+                } else {
+                    toast.error('Error al inscribirse al evento.');
+                }
+            } else {
+                setMostrarModalCancelar(true);
+            }
+        } catch (err) {
+            console.error('Error inesperado en manejo inscripción:', err);
+            toast.error('Error inesperado al procesar la inscripción.');
         }
-    }
+    };
+
 
     const confirmarCancelacion = async () => {
         try {
@@ -188,6 +236,7 @@ const DetalleEvento = () => {
                 .from('equipo')
                 .select('id, id_lider')
                 .eq('id_lider', usuarioId)
+                .eq('id_evento', id)
                 .maybeSingle();
 
             if ((tipoEvento === 4 || tipoEvento === 2) && equipo && equipo.id_lider === usuarioId) {
@@ -209,6 +258,7 @@ const DetalleEvento = () => {
                 await supabase.from('equipo').delete().eq('id', equipo.id);
 
                 toast.success('Se canceló la inscripción del equipo completo.');
+                await fetchEquiposIncompletos(evento.id);
             } else if (tipoEvento === 4 || tipoEvento === 2) {
                 // Si es Hackathon o Feria pero no es el líder
                 await supabase.from('inscripcionevento').delete().match({id_evento: id, id_usuario: usuarioId});
@@ -232,7 +282,7 @@ const DetalleEvento = () => {
 
     const unirseAEquipo = async (equipoId) => {
         try {
-            // Validar que no esté ya inscrito (por seguridad extra)
+            // Validar que no esté ya inscrito
             const {data: yaInscrito, error: errorInscrito} = await supabase
                 .from('inscripcionevento')
                 .select('id_usuario')
@@ -245,14 +295,40 @@ const DetalleEvento = () => {
                 return;
             }
 
-            // Insertar en inscripcionevento
+            // Verificar que el equipo aún exista
+            const {data: equipoExistente, error: equipoError} = await supabase
+                .from('equipo')
+                .select('id')
+                .eq('id', equipoId)
+                .maybeSingle();
+
+            if (equipoError) throw equipoError;
+            if (!equipoExistente) {
+                toast.error('El equipo ya no existe.');
+                fetchEquiposIncompletos(evento.id); // Refresca lista visual
+                return;
+            }
+
+            // Verificar cantidad de miembros actual
+            const {data: miembrosActuales, error: errorMiembros} = await supabase
+                .from('miembrosequipo')
+                .select('id_usuario')
+                .eq('id_equipo', equipoId);
+
+            if (errorMiembros) throw errorMiembros;
+            if ((miembrosActuales?.length ?? 0) >= 6) {
+                toast.error('El equipo ya está completo.');
+                fetchEquiposIncompletos(evento.id);
+                return;
+            }
+
+            // Insertar en ambas tablas (inscripcionevento y miembrosequipo)
             const {error: inscError} = await supabase
                 .from('inscripcionevento')
                 .insert({id_evento: parseInt(id), id_usuario: usuarioId});
 
             if (inscError) throw inscError;
 
-            // Insertar en miembrosequipo
             const {error: miembroError} = await supabase
                 .from('miembrosequipo')
                 .insert({id_equipo: equipoId, id_usuario: usuarioId});
@@ -261,12 +337,12 @@ const DetalleEvento = () => {
 
             toast.success('Te uniste al equipo exitosamente.');
             setEstaInscrito(true);
+            fetchEquiposIncompletos(evento.id);
         } catch (error) {
             console.error(error);
             toast.error('Hubo un error al intentar unirte al equipo.');
         }
     };
-
 
     if (!evento) return <p className="text-center mt-5">Cargando evento...</p>
 
