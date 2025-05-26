@@ -96,17 +96,17 @@ const InscribirEquipo = () => {
             return;
         }
 
-        if (new Set(miembros).size !== miembros.length) {
-            toast.error('Hay miembros duplicados.');
-            return;
-        }
-
         const miembrosNumeros = miembros
             .map(id => parseInt(id))
             .filter(id => Number.isInteger(id) && id > 0);
 
         if (miembrosNumeros.length !== miembros.length) {
             toast.error('Todos los registros deben ser números válidos.');
+            return;
+        }
+
+        if (new Set(miembrosNumeros).size !== miembrosNumeros.length) {
+            toast.error('Hay miembros duplicados.');
             return;
         }
 
@@ -170,17 +170,17 @@ const InscribirEquipo = () => {
             return;
         }
 
-        if (new Set(miembros).size !== miembros.length) {
-            toast.error('Hay miembros duplicados.');
+        const miembrosNumeros = miembros.map(id => parseInt(id));
+
+        const miembrosUnicos = new Set(miembrosNumeros);
+        if (miembrosUnicos.size !== miembros.length) {
+            toast.error('Hay miembros duplicados. Por favor corrige antes de continuar.');
             return;
         }
 
-        const miembrosNumeros = miembros
-            .map(id => parseInt(id))
-            .filter(id => Number.isInteger(id) && id > 0);
-
-        if (miembrosNumeros.length !== miembros.length) {
-            toast.error('Todos los registros deben ser números válidos.');
+        const miembrosValidos = miembrosNumeros.filter(id => Number.isInteger(id) && id > 0);
+        if (miembrosValidos.length !== miembros.length) {
+            toast.error('Todos los registros deben ser números válidos y mayores a 0.');
             return;
         }
 
