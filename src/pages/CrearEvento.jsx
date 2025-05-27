@@ -368,13 +368,14 @@ const CrearEvento = () => {
                                 {loading ? 'Creando…' : 'Crear Evento'}
                             </button>
 
-                            {tipoUsuario === 1 && (
+                            {tipoUsuario !== 6 && tipoUsuario !== 7 && (
                                 <div className="alert alert-info mt-4" role="alert">
                                     <strong>Nota:</strong> Los estudiantes solo pueden crear eventos de
                                     tipo <em> Evento Informal</em>. Los eventos que creen deberán ser aprobados por un
                                     administrador antes de publicarse.
                                 </div>
                             )}
+
                         </div>
 
 

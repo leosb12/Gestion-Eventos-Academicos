@@ -242,13 +242,21 @@ const DetalleEvento = () => {
                                 <div className="col">
                                     <p className="text-center fw-semibold mb-2">Empieza el:</p>
                                     <p className="text-center fs-5 mb-4">
-                                        {new Date(evento.fechainicio).toLocaleDateString()}
+                                        <p className="text-center fs-5 mb-4">
+                                            {evento.fechainicio?.split('-').reverse().join('/')}
+                                        </p>
+
+
                                     </p>
                                 </div>
                                 <div className="col">
                                     <p className="text-center fw-semibold mb-2">Termina el:</p>
                                     <p className="text-center fs-5 mb-4">
-                                        {new Date(evento.fechafin).toLocaleDateString()}
+                                        <p className="text-center fs-5 mb-4">
+                                            {evento.fechafin?.split('-').reverse().join('/')}
+                                        </p>
+
+
                                     </p>
                                 </div>
                             </div>
