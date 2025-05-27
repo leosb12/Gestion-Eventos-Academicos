@@ -9,14 +9,11 @@ const EventCard = ({evento}) => {
     };
 
     const formatearFecha = (fechaStr) => {
-        if (!fechaStr) return null;
-        const fecha = new Date(fechaStr);
-        return isNaN(fecha) ? null : fecha.toLocaleDateString('es-BO', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-        });
+        if (!fechaStr) return '';
+        const [year, month, day] = fechaStr.split('-');
+        return `${day}/${month}/${year}`;
     };
+
 
     const fechaInicio = formatearFecha(evento.fechainicio);
     const fechaFin = formatearFecha(evento.fechafin);
