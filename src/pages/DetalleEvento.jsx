@@ -402,6 +402,19 @@ const DetalleEvento = () => {
 
                 <div className="row">
                     <div className="col-md-7">
+                        {evento.id_estado === 1 && (
+                            <span className="badge bg-success fs-6 mb-2">Inscripción Abierta</span>
+                        )}
+                        {evento.id_estado === 2 && (
+                            <span className="badge bg-warning text-dark fs-6 mb-2">En Proceso</span>
+                        )}
+                        {evento.id_estado === 3 && (
+                            <span className="badge bg-secondary fs-6 mb-2">Finalizado</span>
+                        )}
+                        {evento.id_estado === 4 && (
+                            <span className="badge bg-danger fs-6 mb-2">Cancelado</span>
+                        )}
+
                         <h2 className="fw-bold">{evento.nombre}</h2>
                         <p className="mt-3">{evento.descripcion}</p>
                     </div>

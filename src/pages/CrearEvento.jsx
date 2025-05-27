@@ -69,6 +69,7 @@ const CrearEvento = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
         if (bloquesHorarios.length === 0) {
             setErrorBloques('Debes agregar al menos un horario.');
             return;
@@ -80,15 +81,15 @@ const CrearEvento = () => {
             toast.error('La fecha de fin no puede ser anterior a la fecha de inicio.');
             return;
         }
-        setLoading(true); // 🔐 Previene múltiples clics
+
+        if (!user?.email) {
+            toast.error('No hay usuario autenticado.');
+            return;
+        }
+
+        setLoading(true); // ✅ SOLO después de pasar todas las validaciones
+
         try {
-
-
-            if (!user?.email) {
-                toast.error('No hay usuario autenticado.');
-                return;
-            }
-
             const {data: usuarioData} = await supabase
                 .from('usuario')
                 .select('id')
@@ -142,7 +143,6 @@ const CrearEvento = () => {
 
             if (insertError) throw insertError;
 
-
             if (bloquesHorarios.length > 0) {
                 const inserts = bloquesHorarios.map(b => ({
                     ...b,
@@ -155,14 +155,14 @@ const CrearEvento = () => {
 
             toast.dismiss(); // por si había uno pendiente
             navigate('/', {state: {eventoCreado: true}});
-
         } catch (err) {
             toast.error('Error creando evento');
             console.error(err);
         } finally {
-            setLoading(false);
+            setLoading(false); // ✅ SIEMPRE se ejecuta
         }
     };
+
 
     return (
         <>

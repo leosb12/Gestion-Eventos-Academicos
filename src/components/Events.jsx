@@ -8,7 +8,7 @@ const Events = ({filtros}) => {
 
     useEffect(() => {
         const fetchEventos = async () => {
-            let query = supabase.from('evento').select('id, nombre, descripcion, imagen_url, fechainicio, fechafin');
+            let query = supabase.from('evento').select('id, nombre, descripcion, imagen_url, fechainicio, fechafin, id_estado');
 
             if (filtros.categoria) query = query.eq('id_tevento', filtros.categoria);
             if (filtros.ubicacion) query = query.eq('id_ubicacion', filtros.ubicacion);
