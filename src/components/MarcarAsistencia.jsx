@@ -80,11 +80,17 @@ const MarcarAsistencia = ({evento, usuarioId}) => {
         }
 
         if (evento.id_tevento === 4) {
-            if (clave.trim() !== 'CLAVE_ENTRADA') {
+            if (!evento.clave_asistencia) {
+                toast.error('No hay clave configurada para este evento.');
+                return;
+            }
+
+            if (clave.trim() !== evento.clave_asistencia.trim()) {
                 toast.error('Clave incorrecta.');
                 return;
             }
         }
+
 
         const {error: insertError} = await supabase.from('asistencia').insert({
             id_evento: evento.id,
