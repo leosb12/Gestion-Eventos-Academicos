@@ -30,31 +30,31 @@ const MarcarAsistencia = ({evento, usuarioId}) => {
         const obtenerEquipo = async () => {
             if (!usuarioId || !evento?.id || evento.id_tevento !== 2) return;
 
-            const {data: miembroData, error: errorMiembro} = await supabase
+            const {data: equiposUsuario, error} = await supabase
                 .from('miembrosequipo')
-                .select('id_equipo')
+                .select('equipo(id, id_evento)')
                 .eq('id_usuario', usuarioId);
 
-            if (errorMiembro || !miembroData?.length) return;
+            if (error || !equiposUsuario?.length) return;
 
-            const idEquipo = miembroData[0].id_equipo;
+            const equipoActual = equiposUsuario.find(e => e.equipo?.id_evento === evento.id);
+            console.log("📦 Equipos del usuario:", equiposUsuario);
+            console.log("🎯 Buscando equipo con id_evento =", evento.id);
 
-            const {data: equipo, error: errorEquipo} = await supabase
-                .from('equipo')
-                .select('id')
-                .eq('id', idEquipo)
-                .eq('id_evento', evento.id)
-                .maybeSingle();
-
-            if (!errorEquipo && equipo) {
-                setEquipoId(equipo.id);
+            if (equipoActual?.equipo?.id) {
+                setEquipoId(equipoActual.equipo.id);
             }
         };
 
         obtenerEquipo();
     }, [usuarioId, evento]);
 
+
     const handleAsistencia = async () => {
+        console.log("📌 handleAsistencia: evento =", evento);
+        console.log("📌 handleAsistencia: usuarioId =", usuarioId);
+        console.log("📌 handleAsistencia: equipoId =", equipoId);
+
         if (!evento || !usuarioId) {
             toast.error('Faltan datos para marcar asistencia');
             return;
@@ -68,10 +68,10 @@ const MarcarAsistencia = ({evento, usuarioId}) => {
 
             const {data: proyecto, error: errorProyecto} = await supabase
                 .from('proyecto')
-                .select('id')
+                .select('id, url_informe')
                 .eq('id_equipo', equipoId)
-                .eq('id_evento', evento.id)
                 .not('url_informe', 'is', null);
+
 
             if (errorProyecto || !proyecto || proyecto.length === 0) {
                 toast.error('Debes subir el informe final antes de marcar asistencia.');
