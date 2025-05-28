@@ -4,7 +4,8 @@ import Navbar from '../components/Navbar.jsx';
 import AuthBackground from '../components/AuthBackground.jsx';
 import EventWrapper from '../components/EventWrapper.jsx';
 import supabase from '../utils/supabaseClient.js';
-import {toast} from 'react-toastify';
+import {toast, ToastContainer} from 'react-toastify';
+
 import 'react-toastify/dist/ReactToastify.css';
 import {UserAuth} from '../context/AuthContext';
 import ImageCropper from '../components/ImageCropper.jsx';
@@ -54,8 +55,10 @@ const CrearEvento = () => {
     const [modalidad, setModalidad] = useState('');
     const [dia, setDia] = useState('');
     const [bloquesHorarios, setBloquesHorarios] = useState([]);
-    const [showCropper, setShowCropper] = useState(false);
-    const [rawImage, setRawImage] = useState(null);
+const [claveAsistencia, setClaveAsistencia] = useState('');
+const [showCropper, setShowCropper] = useState(false);
+const [rawImage, setRawImage] = useState(null);
+
 
     useEffect(() => {
         const fetchHorarios = async () => {
@@ -115,6 +118,7 @@ const CrearEvento = () => {
             return;
         }
 
+
         setLoading(true); // ✅ SOLO después de pasar todas las validaciones
 
         try {
@@ -165,10 +169,12 @@ const CrearEvento = () => {
                     id_tevento: parseInt(tipoEvento),
                     id_estado: 1,
                     id_usuario_creador: id_usuario,
-                    imagen_url: imagenUrl
+                    imagen_url: imagenUrl,
+                    clave_asistencia: tipoEvento === '4' ? claveAsistencia.trim() : null
                 }])
                 .select()
                 .single();
+
 
             if (insertError) throw insertError;
 
@@ -361,21 +367,6 @@ const CrearEvento = () => {
 
                         <div className="row mb-4">
                             <div className="col">
-                                <label className="form-label">Ubicación:</label>
-                                <select
-                                    className="form-select"
-                                    value={ubicacion}
-                                    onChange={e => setUbicacion(e.target.value)}
-                                    required
-                                >
-                                    <option value="">Selecciona...</option>
-                                    <option value="1">Campus Universitario</option>
-                                    <option value="2">Auditorio</option>
-                                    <option value="3">Parqueo</option>
-                                    <option value="4">Biblioteca</option>
-                                </select>
-                            </div>
-                            <div className="col">
                                 <label className="form-label">Tipo de Evento:</label>
                                 <select
                                     className="form-select"
@@ -397,7 +388,21 @@ const CrearEvento = () => {
                                         <option value="6">Evento Informal</option>
                                     )}
                                 </select>
+
+                                {tipoEvento === '4' && (
+                                    <div className="mt-3">
+                                        <label className="form-label">Clave de asistencia:</label>
+                                        <input
+                                            type="text"
+                                            className="form-control"
+                                            value={claveAsistencia}
+                                            onChange={e => setClaveAsistencia(e.target.value)}
+                                            required
+                                        />
+                                    </div>
+                                )}
                             </div>
+
                         </div>
 
                         <div className="text-center">
@@ -431,6 +436,7 @@ const CrearEvento = () => {
 
                 </EventWrapper>
             </AuthBackground>
+            <ToastContainer position="top-right" autoClose={3000}/>D
         </>
     );
 };

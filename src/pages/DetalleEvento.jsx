@@ -6,6 +6,8 @@ import {toast, ToastContainer} from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import HorarioCard from '../components/HorarioCard.jsx'
 import {UserAuth} from '../context/AuthContext.jsx'
+import MarcarAsistencia from '../components/MarcarAsistencia.jsx';
+
 
 const DetalleEvento = () => {
     const {id} = useParams()
@@ -21,6 +23,9 @@ const DetalleEvento = () => {
     const [equiposIncompletos, setEquiposIncompletos] = useState([]);
     const [inscripcionCargando, setInscripcionCargando] = useState(true);
     const [refresco, setRefresco] = useState(0);
+    const [miEquipo, setMiEquipo] = useState(null);
+    const [subiendoInforme, setSubiendoInforme] = useState(false);
+
 
     useEffect(() => {
         fetchEvento()
@@ -37,6 +42,123 @@ const DetalleEvento = () => {
             verificarInscripcion()
         }
     }, [evento, usuarioId, refresco])
+
+    const subirInformePDF = async (archivo) => {
+        if (!archivo || archivo.type !== 'application/pdf') {
+            toast.error('Archivo inválido. Debe ser PDF.');
+            return;
+        }
+
+        setSubiendoInforme(true);
+
+        try {
+            const nombreLimpio = archivo.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_.-]/g, '');
+            const nombreArchivo = `informe_${Date.now()}_${nombreLimpio}`;
+
+            const {data: storageData, error: storageError} = await supabase
+                .storage
+                .from('informes')
+                .upload(nombreArchivo, archivo);
+
+            if (storageError) throw storageError;
+
+            const {data: urlData} = supabase
+                .storage
+                .from('informes')
+                .getPublicUrl(nombreArchivo);
+
+            const {error: updateError} = await supabase
+                .from('proyecto')
+                .update({url_informe: urlData.publicUrl})
+                .eq('id', miEquipo.proyecto.id);
+
+            if (updateError) throw updateError;
+
+            toast.success('Informe subido correctamente.');
+            setMiEquipo(prev => ({
+                ...prev,
+                proyecto: {...prev.proyecto, url_informe: urlData.publicUrl}
+            }));
+        } catch (err) {
+            console.error(err);
+            toast.error('Error al subir el informe.');
+        } finally {
+            setSubiendoInforme(false);
+        }
+    };
+
+    useEffect(() => {
+        console.log("🔍 Ejecutando efecto para obtener equipo");
+
+        const obtenerMiEquipo = async () => {
+            if (!evento || !usuarioId || !estaInscrito) {
+                console.log("⛔ Evento, usuarioId o inscripción aún no están listos");
+                return;
+            }
+
+            const tipo = parseInt(evento.id_tevento);
+            if (tipo !== 2 && tipo !== 4) {
+                console.log("ℹ️ El evento no es Feria ni Hackathon");
+                return;
+            }
+
+            console.log("✅ Buscando equipo del usuario", usuarioId, "en evento", evento.id);
+
+            const {data: miembro, error: errorMiembro} = await supabase
+                .from('miembrosequipo')
+                .select('id_equipo, equipo ( id_evento )')
+                .eq('id_usuario', usuarioId);
+
+            const miembroValido = miembro?.find(m => m.equipo?.id_evento === evento.id);
+
+            if (!miembroValido) {
+                console.warn("❌ No se encontró equipo válido del usuario en este evento");
+                setMiEquipo(null);
+                return;
+            }
+
+            const idEquipo = miembroValido.id_equipo;
+
+            const {data: equipo, error: errorEquipo} = await supabase
+                .from('equipo')
+                .select(`
+                id, nombre,
+                nivelgrupo (
+                    nivel:nivel!id (nombre)
+                ),
+                usuario:usuario!id_lider (nombre),
+                miembrosequipo (
+                    id_usuario,
+                    usuario:usuario (nombre)
+                )
+            `)
+                .eq('id', idEquipo)
+                .eq('id_evento', evento.id)
+                .maybeSingle();
+
+            if (!errorEquipo && equipo) {
+                console.log("✅ Equipo obtenido:", equipo);
+                setMiEquipo(equipo);
+            } else {
+                console.warn("❌ No se encontró equipo en la tabla equipo");
+                setMiEquipo(null);
+            }
+
+            const {data: proyecto, error: errorProyecto} = await supabase
+                .from('proyecto')
+                .select('id, url_informe')
+                .eq('id_equipo', idEquipo)
+                .maybeSingle();
+
+            if (!errorProyecto && proyecto) {
+                setMiEquipo(prev => ({...prev, proyecto}));
+            }
+
+        };
+
+        obtenerMiEquipo();
+    }, [evento, usuarioId, estaInscrito]);
+
 
     useEffect(() => {
         if (evento && evento.id_tevento && !estaInscrito) {
@@ -197,7 +319,7 @@ const DetalleEvento = () => {
             const estadoEvento = parseInt(evento?.id_estado ?? 0);
 
             if (estadoEvento !== 1) {
-                toast.warning('Este evento no está disponible para inscripción.');
+                toast.warning('El evento esta en curso');
                 return;
             }
 
@@ -232,53 +354,84 @@ const DetalleEvento = () => {
         try {
             const tipoEvento = parseInt(evento?.id_tevento ?? 0);
 
-            const {data: equipo, error: equipoError} = await supabase
-                .from('equipo')
-                .select('id, id_lider')
-                .eq('id_lider', usuarioId)
-                .eq('id_evento', id)
-                .maybeSingle();
+            // Buscar todos los equipos del usuario
+            const {data: miembrosEquipo, error: errorMiembrosEquipo} = await supabase
+                .from('miembrosequipo')
+                .select('id_equipo')
+                .eq('id_usuario', usuarioId);
 
-            if ((tipoEvento === 4 || tipoEvento === 2) && equipo && equipo.id_lider === usuarioId) {
-                // Si es Hackathon o Feria y el usuario es el líder
+            if (errorMiembrosEquipo || !miembrosEquipo || miembrosEquipo.length === 0) {
+                throw new Error("No se encontró el equipo del usuario.");
+            }
+
+            // Verificamos a qué equipo del evento actual pertenece
+            let idEquipo = null;
+
+            for (const m of miembrosEquipo) {
+                const {data: eqEvento} = await supabase
+                    .from('equipo')
+                    .select('id_evento')
+                    .eq('id', m.id_equipo)
+                    .maybeSingle();
+
+                if (eqEvento?.id_evento === parseInt(id)) {
+                    idEquipo = m.id_equipo;
+                    break;
+                }
+            }
+
+            if ((tipoEvento === 2 || tipoEvento === 4) && idEquipo) {
+                const {data: equipo} = await supabase
+                    .from('equipo')
+                    .select('id, id_lider')
+                    .eq('id', idEquipo)
+                    .maybeSingle();
+
                 const {data: miembros} = await supabase
                     .from('miembrosequipo')
                     .select('id_usuario')
-                    .eq('id_equipo', equipo.id);
+                    .eq('id_equipo', idEquipo);
 
                 const idsMiembros = miembros.map(m => m.id_usuario);
 
-                // Eliminar proyecto si existe
-                await supabase.from('proyecto').delete().eq('id_equipo', equipo.id);
+                if (equipo.id_lider === usuarioId) {
+                    // Es líder → eliminar TODO
+                    await supabase.from('proyecto').delete().eq('id_equipo', idEquipo);
+                    await supabase.from('asistencia').delete().in('id_usuario', idsMiembros).eq('id_evento', id);
+                    await supabase.from('inscripcionevento').delete().in('id_usuario', idsMiembros).eq('id_evento', id);
+                    await supabase.from('miembrosequipo').delete().eq('id_equipo', idEquipo);
+                    await supabase.from('nivelgrupo').delete().eq('id_equipo', idEquipo);
+                    await supabase.from('equipo').delete().eq('id', idEquipo);
 
-// Eliminar inscripciones y relaciones
-                await supabase.from('inscripcionevento').delete().in('id_usuario', idsMiembros).eq('id_evento', id);
-                await supabase.from('miembrosequipo').delete().eq('id_equipo', equipo.id);
-                await supabase.from('nivelgrupo').delete().eq('id_equipo', equipo.id);
-                await supabase.from('equipo').delete().eq('id', equipo.id);
+                    toast.success('Se canceló la inscripción del equipo completo.');
+                } else {
+                    // Es miembro → eliminar solo a sí mismo
+                    await supabase.from('inscripcionevento').delete().match({id_evento: id, id_usuario: usuarioId});
+                    await supabase.from('asistencia').delete().match({id_evento: id, id_usuario: usuarioId});
+                    await supabase.from('miembrosequipo').delete().match({id_usuario: usuarioId, id_equipo: idEquipo});
 
-                toast.success('Se canceló la inscripción del equipo completo.');
+                    toast.success('Te has salido del equipo correctamente.');
+                }
+
                 await fetchEquiposIncompletos(evento.id);
-            } else if (tipoEvento === 4 || tipoEvento === 2) {
-                // Si es Hackathon o Feria pero no es el líder
-                await supabase.from('inscripcionevento').delete().match({id_evento: id, id_usuario: usuarioId});
-                await supabase.from('miembrosequipo').delete().match({id_usuario: usuarioId});
-
-                toast.success('Te has salido del equipo correctamente.');
             } else {
-                // Si no es Hackathon ni Feria
+                // Evento normal (no tipo feria ni hackaton)
                 await supabase.from('inscripcionevento').delete().match({id_evento: id, id_usuario: usuarioId});
+                await supabase.from('asistencia').delete().match({id_evento: id, id_usuario: usuarioId});
 
                 toast.success('Cancelación completada correctamente.');
             }
 
             setEstaInscrito(false);
+
         } catch (err) {
+            console.error(err);
             toast.error('Error al cancelar la inscripción.');
         } finally {
             setMostrarModalCancelar(false);
         }
     };
+
 
     const unirseAEquipo = async (equipoId) => {
         try {
@@ -342,6 +495,7 @@ const DetalleEvento = () => {
             console.error(error);
             toast.error('Hubo un error al intentar unirte al equipo.');
         }
+
     };
 
     if (!evento) return <p className="text-center mt-5">Cargando evento...</p>
@@ -406,17 +560,72 @@ const DetalleEvento = () => {
                             <span className="badge bg-success fs-6 mb-2">Inscripción Abierta</span>
                         )}
                         {evento.id_estado === 2 && (
-                            <span className="badge bg-warning text-dark fs-6 mb-2">En Proceso</span>
+                            <span className="badge bg-secondary fs-6 mb-2">Inscripción Cerrada</span>
                         )}
                         {evento.id_estado === 3 && (
-                            <span className="badge bg-secondary fs-6 mb-2">Finalizado</span>
+                            <span className="badge bg-warning text-dark fs-6 mb-2">Próximamente</span>
                         )}
                         {evento.id_estado === 4 && (
+                            <span className="badge bg-primary fs-6 mb-2">En Curso</span>
+                        )}
+                        {evento.id_estado === 5 && (
+                            <span className="badge bg-dark fs-6 mb-2">Finalizado</span>
+                        )}
+                        {evento.id_estado === 6 && (
                             <span className="badge bg-danger fs-6 mb-2">Cancelado</span>
                         )}
 
                         <h2 className="fw-bold">{evento.nombre}</h2>
                         <p className="mt-3">{evento.descripcion}</p>
+
+                        {/* ✅ Bloque de asistencia si el usuario está inscrito */}
+                        {estaInscrito && (
+                            <div className="bg-white p-4 mt-4 mb-3 rounded-4 shadow-sm border d-inline-block">
+                                <h5 className="fw-bold mb-3">Registro de Asistencia</h5>
+                                <MarcarAsistencia evento={evento} usuarioId={usuarioId}/>
+                            </div>
+                        )}
+
+                        {miEquipo && (
+                            <div className="bg-white p-4 mt-3 mb-3 rounded-4 shadow-sm border">
+                                <h5 className="fw-bold mb-3">Mi Equipo</h5>
+                                <p><strong>Nombre:</strong> {miEquipo.nombre}</p>
+                                <p><strong>Nivel:</strong> {miEquipo.nivelgrupo?.[0]?.nivel?.nombre || '-'}</p>
+                                <p><strong>Líder:</strong> {miEquipo.usuario?.nombre || '-'}</p>
+                                <p><strong>Miembros:</strong></p>
+                                <ul>
+                                    {miEquipo.miembrosequipo.map((m, i) => (
+                                        <li key={i}>{m.usuario?.nombre || `Usuario ${m.id_usuario}`}</li>
+                                    ))}
+                                </ul>
+                                {miEquipo?.proyecto?.url_informe ? (
+                                    <div className="mt-3">
+                                        <a
+                                            href={miEquipo.proyecto.url_informe}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="btn btn-outline-primary"
+                                        >
+                                            Ver Informe PDF
+                                        </a>
+                                    </div>
+                                ) : (
+                                    <div className="mt-3">
+                                        <label className="form-label">Subir Informe Final PDF:</label>
+                                        <input
+                                            type="file"
+                                            accept=".pdf"
+                                            className="form-control mb-2"
+                                            onChange={(e) => subirInformePDF(e.target.files[0])}
+                                        />
+                                        {subiendoInforme && <p className="text-muted mt-2">Subiendo...</p>}
+                                    </div>
+                                )}
+
+
+                            </div>
+                        )}
+
                     </div>
 
                     <div className="col-md-5 d-flex align-items-start justify-content-center">
