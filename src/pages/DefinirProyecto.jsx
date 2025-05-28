@@ -20,8 +20,10 @@ const DefinirProyecto = () => {
     const [descripcionProyecto, setDescripcionProyecto] = useState('');
     const [materiaSeleccionada, setMateriaSeleccionada] = useState('');
     const [loading, setLoading] = useState(false);
+    const [proyectoFinalizado, setProyectoFinalizado] = useState(false);
+    const [archivoInforme, setArchivoInforme] = useState(null);
 
-    const {user} = UserAuth(); // asegúrate de tener esto arriba del useEffect
+    const {user} = UserAuth();
 
     useEffect(() => {
         const obtenerUsuario = async () => {
@@ -44,7 +46,6 @@ const DefinirProyecto = () => {
         }
     }, [user]);
 
-
     useEffect(() => {
         const cargarMaterias = async () => {
             const {data, error} = await supabase.from('materia').select('*');
@@ -63,8 +64,45 @@ const DefinirProyecto = () => {
         }
 
         setLoading(true);
+        let informeURL = null;
+
+        // Primero: subir informe PDF si se marcó
+        if (proyectoFinalizado) {
+            if (!archivoInforme || archivoInforme.type !== 'application/pdf') {
+                toast.error('Debes subir un archivo PDF válido.');
+                setLoading(false);
+                return;
+            }
+
+            if (archivoInforme.size === 0) {
+                toast.error('El archivo PDF está vacío.');
+                setLoading(false);
+                return;
+            }
+
+            const nombreLimpio = archivoInforme.name.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_.-]/g, '');
+            const nombreArchivo = `informe_${Date.now()}_${nombreLimpio}`;
+
+            const {data: storageData, error: storageError} = await supabase.storage
+                .from('informes')
+                .upload(nombreArchivo, archivoInforme);
+
+            if (storageError) {
+                toast.error('Error al subir el informe: ' + storageError.message);
+                setLoading(false);
+                return;
+            }
+
+            const {data: urlData} = supabase
+                .storage
+                .from('informes')
+                .getPublicUrl(nombreArchivo);
+
+            informeURL = urlData.publicUrl;
+        }
 
         try {
+            // Insertar equipo
             const {data: equipoData, error: eqInsertError} = await supabase
                 .from('equipo')
                 .insert({nombre: nombreEquipo, id_lider: usuarioId, id_evento: parseInt(idEvento)})
@@ -74,28 +112,47 @@ const DefinirProyecto = () => {
             if (eqInsertError) throw eqInsertError;
             const idEquipo = equipoData.id;
 
+            // Insertar miembros
             const miembrosNumeros = miembros.map(id => parseInt(id));
             const miembrosData = miembrosNumeros.map(id_usuario => ({id_equipo: idEquipo, id_usuario}));
 
             const {error: miembrosError} = await supabase.from('miembrosequipo').insert(miembrosData);
             if (miembrosError) throw miembrosError;
 
+            // Insertar nivel
             const {error: nivelError} = await supabase
                 .from('nivelgrupo')
                 .insert({id_nivel: parseInt(nivelSeleccionado), id_equipo: idEquipo});
             if (nivelError) throw nivelError;
 
-            const inscripciones = miembrosNumeros.map(id_usuario => ({id_evento: parseInt(idEvento), id_usuario}));
-            const {error: inscError} = await supabase.from('inscripcionevento').insert(inscripciones);
-            if (inscError) throw inscError;
+            // Insertar inscripciones
+            const {data: yaInscritos, error: yaInsError} = await supabase
+                .from('inscripcionevento')
+                .select('id_usuario')
+                .eq('id_evento', parseInt(idEvento));
 
+            if (yaInsError) throw yaInsError;
+
+            const yaInsIds = yaInscritos.map(i => i.id_usuario);
+            const nuevasInscripciones = miembrosNumeros
+                .filter(id_usuario => !yaInsIds.includes(id_usuario))
+                .map(id_usuario => ({id_evento: parseInt(idEvento), id_usuario}));
+
+            if (nuevasInscripciones.length > 0) {
+                const {error: inscError} = await supabase.from('inscripcionevento').insert(nuevasInscripciones);
+                if (inscError) throw inscError;
+            }
+
+            // Insertar proyecto
             const {error: proyectoError} = await supabase.from('proyecto').insert({
                 nombre: nombreProyecto,
                 descripcion: descripcionProyecto,
                 id_equipo: idEquipo,
                 id_materia: parseInt(materiaSeleccionada),
-                id_estado: 4
+                id_estado: 4,
+                url_informe: informeURL
             });
+
             if (proyectoError) throw proyectoError;
 
             toast.success('Proyecto definido e inscrito correctamente.');
@@ -118,11 +175,7 @@ const DefinirProyecto = () => {
                             type="button"
                             className="btn btn-primary"
                             onClick={() => navigate(`/inscribir-equipo/${idEvento}`, {
-                                state: {
-                                    nombreEquipo,
-                                    nivelSeleccionado,
-                                    miembros
-                                }
+                                state: {nombreEquipo, nivelSeleccionado, miembros}
                             })}
                         >
                             ← Volver al equipo
@@ -164,6 +217,31 @@ const DefinirProyecto = () => {
                                     <option key={m.id} value={m.id}>{m.nombre}</option>
                                 ))}
                             </select>
+
+                            <div className="form-check mt-4 mb-3">
+                                <input
+                                    className="form-check-input"
+                                    type="checkbox"
+                                    id="proyectoFinalizado"
+                                    checked={proyectoFinalizado}
+                                    onChange={(e) => setProyectoFinalizado(e.target.checked)}
+                                />
+                                <label className="form-check-label" htmlFor="proyectoFinalizado">
+                                    Mi proyecto está finalizado
+                                </label>
+                            </div>
+
+                            {proyectoFinalizado && (
+                                <div className="mb-3">
+                                    <label className="form-label">Subir informe PDF:</label>
+                                    <input
+                                        type="file"
+                                        className="form-control"
+                                        accept=".pdf"
+                                        onChange={(e) => setArchivoInforme(e.target.files[0])}
+                                    />
+                                </div>
+                            )}
                         </div>
 
                         <div className="text-center">
