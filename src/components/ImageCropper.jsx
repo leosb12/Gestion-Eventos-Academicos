@@ -27,9 +27,9 @@ const ImageCropper = ({image, onClose, onCrop}) => {
     <div style={{
       backgroundColor: 'white', padding: 20, borderRadius: 8,
       display: 'flex', flexDirection: 'column', alignItems: 'center',
-      maxWidth: '90vw'
+      width: '90vw', maxWidth: '700px'  // 👈 MÁS ANCHO
     }}>
-      <div style={{ width: '100%', height: '300px', position: 'relative' }}>
+      <div style={{ width: '100%', height: '400px', position: 'relative' }}>
         <Cropper
           image={image}
           crop={crop}
@@ -57,6 +57,7 @@ const ImageCropper = ({image, onClose, onCrop}) => {
     </div>
   </div>
 );
+
 
 };
 

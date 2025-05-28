@@ -8,7 +8,32 @@ import {toast} from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import {UserAuth} from '../context/AuthContext';
 import ImageCropper from '../components/ImageCropper.jsx';
+function convertToSquareWithBlackBackground(base64Image) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const size = Math.max(img.width, img.height);
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
 
+      canvas.width = size;
+      canvas.height = size;
+
+      // fondo negro
+      ctx.fillStyle = 'black';
+      ctx.fillRect(0, 0, size, size);
+
+      // centrar la imagen original
+      const dx = (size - img.width) / 2;
+      const dy = (size - img.height) / 2;
+
+      ctx.drawImage(img, dx, dy);
+
+      resolve(canvas.toDataURL('image/jpeg'));
+    };
+    img.src = base64Image;
+  });
+}
 const CrearEvento = () => {
     const {user, tipoUsuario} = UserAuth();
     const esAdmin = tipoUsuario === 6 || tipoUsuario === 7;
@@ -285,16 +310,18 @@ const CrearEvento = () => {
                                 accept="image/*"
                                 className="form-control"
                                 onChange={(e) => {
-                                    const file = e.target.files[0];
-                                    if (file) {
-                                        const reader = new FileReader();
-                                        reader.onload = () => {
-                                            setRawImage(reader.result); // base64 para el cropper
-                                            setShowCropper(true);
-                                        };
-                                        reader.readAsDataURL(file);
-                                    }
-                                }}
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const cuadrada = await convertToSquareWithBlackBackground(reader.result);
+      setRawImage(cuadrada); // ahora la imagen es cuadrada con fondo negro si hacía falta
+      setShowCropper(true);
+    };
+    reader.readAsDataURL(file);
+  }
+}}
+
                                 required
                             />
                         </div>
