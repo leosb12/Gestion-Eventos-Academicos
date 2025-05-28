@@ -7,6 +7,7 @@ import supabase from '../utils/supabaseClient.js';
 import {toast} from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import {UserAuth} from '../context/AuthContext';
+import ImageCropper from '../components/ImageCropper.jsx';
 
 const CrearEvento = () => {
     const {user, tipoUsuario} = UserAuth();
@@ -28,6 +29,8 @@ const CrearEvento = () => {
     const [modalidad, setModalidad] = useState('');
     const [dia, setDia] = useState('');
     const [bloquesHorarios, setBloquesHorarios] = useState([]);
+    const [showCropper, setShowCropper] = useState(false);
+    const [rawImage, setRawImage] = useState(null);
 
     useEffect(() => {
         const fetchHorarios = async () => {
@@ -105,25 +108,26 @@ const CrearEvento = () => {
             let imagenUrl = null;
 
             if (imagen) {
-                const fileExt = imagen.name.split('.').pop();
-                const fileName = `${Date.now()}.${fileExt}`;
-                const filePath = fileName;
+    const fileExt = 'jpg'; // asumimos que el cropper devuelve JPEG
+    const fileName = `${Date.now()}.${fileExt}`;
+    const filePath = fileName;
 
-                const {error: uploadError} = await supabase.storage
-                    .from('event-images')
-                    .upload(filePath, imagen);
+    const {error: uploadError} = await supabase.storage
+        .from('event-images')
+        .upload(filePath, imagen);
 
-                if (uploadError) {
-                    toast.error('Error subiendo la imagen.');
-                    return;
-                }
+    if (uploadError) {
+        toast.error('Error subiendo la imagen.');
+        return;
+    }
 
-                const {data: publicUrlData} = supabase.storage
-                    .from('event-images')
-                    .getPublicUrl(filePath);
+    const {data: publicUrlData} = supabase.storage
+        .from('event-images')
+        .getPublicUrl(filePath);
 
-                imagenUrl = publicUrlData?.publicUrl || null;
-            }
+    imagenUrl = publicUrlData?.publicUrl || null;
+}
+
 
             const {data: insertedEvento, error: insertError} = await supabase
                 .from('evento')
@@ -147,7 +151,7 @@ const CrearEvento = () => {
                 const inserts = bloquesHorarios.map(b => ({
                     ...b,
                     id_evento: insertedEvento.id
-                }));
+                }))
                 console.log('Bloques a insertar:', inserts);
 
                 await supabase.from('horarioevento').insert(inserts);
@@ -280,7 +284,17 @@ const CrearEvento = () => {
                                 type="file"
                                 accept="image/*"
                                 className="form-control"
-                                onChange={e => setImagen(e.target.files[0])}
+                                onChange={(e) => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                        const reader = new FileReader();
+                                        reader.onload = () => {
+                                            setRawImage(reader.result); // base64 para el cropper
+                                            setShowCropper(true);
+                                        };
+                                        reader.readAsDataURL(file);
+                                    }
+                                }}
                                 required
                             />
                         </div>
@@ -380,6 +394,14 @@ const CrearEvento = () => {
 
 
                     </form>
+                    {showCropper && rawImage && (
+    <ImageCropper
+        image={rawImage}
+        onClose={() => setShowCropper(false)}
+        onCrop={(croppedFile) => setImagen(croppedFile)}
+    />
+)}
+
                 </EventWrapper>
             </AuthBackground>
         </>
