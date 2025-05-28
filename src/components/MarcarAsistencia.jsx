@@ -127,9 +127,16 @@ const MarcarAsistencia = ({evento, usuarioId}) => {
                             onChange={(e) => setClave(e.target.value)}
                         />
                     )}
-                    <button className="btn btn-success btn-sm" onClick={handleAsistencia}>
-                        Marcar Asistencia
-                    </button>
+
+                    {evento.id_estado === 4 ? (
+                        <button className="btn btn-success btn-sm" onClick={handleAsistencia}>
+                            Marcar Asistencia
+                        </button>
+                    ) : (
+                        <div className="alert alert-warning p-2 mt-2">
+                            ⏳ El evento aún no ha comenzado.
+                        </div>
+                    )}
                 </>
             )}
         </div>

@@ -199,7 +199,7 @@ const DetalleEvento = () => {
             const estadoEvento = parseInt(evento?.id_estado ?? 0);
 
             if (estadoEvento !== 1) {
-                toast.warning('Este evento no está disponible para inscripción.');
+                toast.warning('El evento esta en curso');
                 return;
             }
 
@@ -414,12 +414,18 @@ const DetalleEvento = () => {
                             <span className="badge bg-success fs-6 mb-2">Inscripción Abierta</span>
                         )}
                         {evento.id_estado === 2 && (
-                            <span className="badge bg-warning text-dark fs-6 mb-2">En Proceso</span>
+                            <span className="badge bg-secondary fs-6 mb-2">Inscripción Cerrada</span>
                         )}
                         {evento.id_estado === 3 && (
-                            <span className="badge bg-secondary fs-6 mb-2">Finalizado</span>
+                            <span className="badge bg-warning text-dark fs-6 mb-2">Próximamente</span>
                         )}
                         {evento.id_estado === 4 && (
+                            <span className="badge bg-primary fs-6 mb-2">En Curso</span>
+                        )}
+                        {evento.id_estado === 5 && (
+                            <span className="badge bg-dark fs-6 mb-2">Finalizado</span>
+                        )}
+                        {evento.id_estado === 6 && (
                             <span className="badge bg-danger fs-6 mb-2">Cancelado</span>
                         )}
 
