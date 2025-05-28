@@ -252,6 +252,8 @@ const DetalleEvento = () => {
 
                 // Eliminar proyecto si existe
                 await supabase.from('proyecto').delete().eq('id_equipo', equipo.id);
+                await supabase.from('asistencia').delete().in('id_usuario', idsMiembros).eq('id_evento', id);
+
 
 // Eliminar inscripciones y relaciones
                 await supabase.from('inscripcionevento').delete().in('id_usuario', idsMiembros).eq('id_evento', id);
@@ -264,12 +266,16 @@ const DetalleEvento = () => {
             } else if (tipoEvento === 4 || tipoEvento === 2) {
                 // Si es Hackathon o Feria pero no es el líder
                 await supabase.from('inscripcionevento').delete().match({id_evento: id, id_usuario: usuarioId});
+                await supabase.from('asistencia').delete().match({id_evento: id, id_usuario: usuarioId});
+
                 await supabase.from('miembrosequipo').delete().match({id_usuario: usuarioId});
 
                 toast.success('Te has salido del equipo correctamente.');
             } else {
                 // Si no es Hackathon ni Feria
                 await supabase.from('inscripcionevento').delete().match({id_evento: id, id_usuario: usuarioId});
+                await supabase.from('asistencia').delete().match({id_evento: id, id_usuario: usuarioId});
+
 
                 toast.success('Cancelación completada correctamente.');
             }

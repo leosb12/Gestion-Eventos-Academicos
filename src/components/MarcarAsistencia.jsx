@@ -1,35 +1,52 @@
-import React, {useState, useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import supabase from '../utils/supabaseClient';
 import {toast} from 'react-toastify';
 
 const MarcarAsistencia = ({evento, usuarioId}) => {
     const [clave, setClave] = useState('');
+    const [yaMarcada, setYaMarcada] = useState(false);
     const [equipoId, setEquipoId] = useState(null);
 
     useEffect(() => {
-        const obtenerEquipo = async () => {
-            if (!usuarioId || !evento?.id) return;
+        const verificarAsistencia = async () => {
+            if (!evento?.id || !usuarioId) return;
 
-            // Obtener ID del equipo al que pertenece el usuario en este evento
             const {data, error} = await supabase
+                .from('asistencia')
+                .select('id_evento')
+                .match({id_evento: evento.id, id_usuario: usuarioId});
+
+            if (!error && data?.length > 0) {
+                setYaMarcada(true);
+            } else {
+                setYaMarcada(false);
+            }
+        };
+
+        verificarAsistencia();
+    }, [evento, usuarioId]);
+
+    useEffect(() => {
+        const obtenerEquipo = async () => {
+            if (!usuarioId || !evento?.id || evento.id_tevento !== 2) return;
+
+            const {data: miembroData, error: errorMiembro} = await supabase
                 .from('miembrosequipo')
                 .select('id_equipo')
                 .eq('id_usuario', usuarioId);
 
-            if (error || !data?.length) {
-                console.warn('No se encontró equipo.');
-                return;
-            }
+            if (errorMiembro || !miembroData?.length) return;
 
-            // Verificar que ese equipo pertenece al evento actual
-            const {data: equipo} = await supabase
+            const idEquipo = miembroData[0].id_equipo;
+
+            const {data: equipo, error: errorEquipo} = await supabase
                 .from('equipo')
                 .select('id')
-                .eq('id', data[0].id_equipo)
+                .eq('id', idEquipo)
                 .eq('id_evento', evento.id)
                 .maybeSingle();
 
-            if (equipo) {
+            if (!errorEquipo && equipo) {
                 setEquipoId(equipo.id);
             }
         };
@@ -38,24 +55,30 @@ const MarcarAsistencia = ({evento, usuarioId}) => {
     }, [usuarioId, evento]);
 
     const handleAsistencia = async () => {
-        if (!evento || !usuarioId) return;
+        if (!evento || !usuarioId) {
+            toast.error('Faltan datos para marcar asistencia');
+            return;
+        }
 
-        // Validar requisito de informe final para Feria Expositiva (id_tevento = 2)
         if (evento.id_tevento === 2) {
-            const {data: proyecto, error} = await supabase
+            if (!equipoId) {
+                toast.error('No se encontró equipo válido');
+                return;
+            }
+
+            const {data: proyecto, error: errorProyecto} = await supabase
                 .from('proyecto')
                 .select('id')
                 .eq('id_equipo', equipoId)
                 .eq('id_evento', evento.id)
                 .not('url_informe', 'is', null);
 
-            if (error || !proyecto?.length) {
+            if (errorProyecto || !proyecto || proyecto.length === 0) {
                 toast.error('Debes subir el informe final antes de marcar asistencia.');
                 return;
             }
         }
 
-        // Validar clave para Hackatón (id_tevento = 4)
         if (evento.id_tevento === 4) {
             if (clave.trim() !== 'CLAVE_ENTRADA') {
                 toast.error('Clave incorrecta.');
@@ -63,7 +86,6 @@ const MarcarAsistencia = ({evento, usuarioId}) => {
             }
         }
 
-        // Registrar asistencia
         const {error: insertError} = await supabase.from('asistencia').insert({
             id_evento: evento.id,
             id_usuario: usuarioId,
@@ -71,31 +93,38 @@ const MarcarAsistencia = ({evento, usuarioId}) => {
         });
 
         if (insertError) {
-            toast.error('Error al registrar la asistencia.');
-        } else {
-            toast.success('Asistencia registrada con éxito.');
+            if (insertError.message.toLowerCase().includes('duplicate')) {
+                toast.info('Ya habías marcado asistencia.');
+                setYaMarcada(true);
+            } else {
+                toast.error('No se pudo registrar la asistencia.');
+            }
+            return;
         }
+
+        toast.success('Asistencia registrada con éxito.');
+        setYaMarcada(true);
     };
 
     return (
         <div className="text-center">
-            {evento.id_tevento === 4 ? (
+            {yaMarcada ? (
+                <span className="badge bg-success px-3 py-2">✅ Asistencia ya registrada</span>
+            ) : (
                 <>
-                    <input
-                        type="password"
-                        className="form-control mb-2"
-                        placeholder="Ingresa la clave"
-                        value={clave}
-                        onChange={(e) => setClave(e.target.value)}
-                    />
-                    <button className="btn btn-primary btn-sm" onClick={handleAsistencia}>
-                        Validar Clave
+                    {evento.id_tevento === 4 && (
+                        <input
+                            type="password"
+                            className="form-control mb-2"
+                            placeholder="Ingresa la clave"
+                            value={clave}
+                            onChange={(e) => setClave(e.target.value)}
+                        />
+                    )}
+                    <button className="btn btn-success btn-sm" onClick={handleAsistencia}>
+                        Marcar Asistencia
                     </button>
                 </>
-            ) : (
-                <button className="btn btn-success btn-sm" onClick={handleAsistencia}>
-                    Marcar Asistencia
-                </button>
             )}
         </div>
     );
