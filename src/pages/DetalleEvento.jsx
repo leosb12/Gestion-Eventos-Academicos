@@ -6,6 +6,8 @@ import {toast, ToastContainer} from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import HorarioCard from '../components/HorarioCard.jsx'
 import {UserAuth} from '../context/AuthContext.jsx'
+import MarcarAsistencia from '../components/MarcarAsistencia.jsx';
+
 
 const DetalleEvento = () => {
     const {id} = useParams()
@@ -417,6 +419,14 @@ const DetalleEvento = () => {
 
                         <h2 className="fw-bold">{evento.nombre}</h2>
                         <p className="mt-3">{evento.descripcion}</p>
+
+                        {/* ✅ Bloque de asistencia si el usuario está inscrito */}
+                        {estaInscrito && (
+                            <div className="bg-white p-4 mt-4 mb-3 rounded-4 shadow-sm border d-inline-block">
+                                <h5 className="fw-bold mb-3">Registro de Asistencia</h5>
+                                <MarcarAsistencia evento={evento} usuarioId={usuarioId}/>
+                            </div>
+                        )}
                     </div>
 
                     <div className="col-md-5 d-flex align-items-start justify-content-center">
