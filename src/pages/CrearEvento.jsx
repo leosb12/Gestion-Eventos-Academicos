@@ -7,6 +7,7 @@ import supabase from '../utils/supabaseClient.js';
 import {toast} from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import {UserAuth} from '../context/AuthContext';
+import ImageCropper from '../components/ImageCropper.jsx';
 
 const CrearEvento = () => {
     const {user, tipoUsuario} = UserAuth();
@@ -28,6 +29,8 @@ const CrearEvento = () => {
     const [modalidad, setModalidad] = useState('');
     const [dia, setDia] = useState('');
     const [bloquesHorarios, setBloquesHorarios] = useState([]);
+    const [showCropper, setShowCropper] = useState(false);
+    const [rawImage, setRawImage] = useState(null);
 
     useEffect(() => {
         const fetchHorarios = async () => {
@@ -69,6 +72,7 @@ const CrearEvento = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
         if (bloquesHorarios.length === 0) {
             setErrorBloques('Debes agregar al menos un horario.');
             return;
@@ -80,15 +84,15 @@ const CrearEvento = () => {
             toast.error('La fecha de fin no puede ser anterior a la fecha de inicio.');
             return;
         }
-        setLoading(true); // 🔐 Previene múltiples clics
+
+        if (!user?.email) {
+            toast.error('No hay usuario autenticado.');
+            return;
+        }
+
+        setLoading(true); // ✅ SOLO después de pasar todas las validaciones
+
         try {
-
-
-            if (!user?.email) {
-                toast.error('No hay usuario autenticado.');
-                return;
-            }
-
             const {data: usuarioData} = await supabase
                 .from('usuario')
                 .select('id')
@@ -104,25 +108,26 @@ const CrearEvento = () => {
             let imagenUrl = null;
 
             if (imagen) {
-                const fileExt = imagen.name.split('.').pop();
-                const fileName = `${Date.now()}.${fileExt}`;
-                const filePath = fileName;
+    const fileExt = 'jpg'; // asumimos que el cropper devuelve JPEG
+    const fileName = `${Date.now()}.${fileExt}`;
+    const filePath = fileName;
 
-                const {error: uploadError} = await supabase.storage
-                    .from('event-images')
-                    .upload(filePath, imagen);
+    const {error: uploadError} = await supabase.storage
+        .from('event-images')
+        .upload(filePath, imagen);
 
-                if (uploadError) {
-                    toast.error('Error subiendo la imagen.');
-                    return;
-                }
+    if (uploadError) {
+        toast.error('Error subiendo la imagen.');
+        return;
+    }
 
-                const {data: publicUrlData} = supabase.storage
-                    .from('event-images')
-                    .getPublicUrl(filePath);
+    const {data: publicUrlData} = supabase.storage
+        .from('event-images')
+        .getPublicUrl(filePath);
 
-                imagenUrl = publicUrlData?.publicUrl || null;
-            }
+    imagenUrl = publicUrlData?.publicUrl || null;
+}
+
 
             const {data: insertedEvento, error: insertError} = await supabase
                 .from('evento')
@@ -142,12 +147,11 @@ const CrearEvento = () => {
 
             if (insertError) throw insertError;
 
-
             if (bloquesHorarios.length > 0) {
                 const inserts = bloquesHorarios.map(b => ({
                     ...b,
                     id_evento: insertedEvento.id
-                }));
+                }))
                 console.log('Bloques a insertar:', inserts);
 
                 await supabase.from('horarioevento').insert(inserts);
@@ -155,14 +159,14 @@ const CrearEvento = () => {
 
             toast.dismiss(); // por si había uno pendiente
             navigate('/', {state: {eventoCreado: true}});
-
         } catch (err) {
             toast.error('Error creando evento');
             console.error(err);
         } finally {
-            setLoading(false);
+            setLoading(false); // ✅ SIEMPRE se ejecuta
         }
     };
+
 
     return (
         <>
@@ -280,7 +284,17 @@ const CrearEvento = () => {
                                 type="file"
                                 accept="image/*"
                                 className="form-control"
-                                onChange={e => setImagen(e.target.files[0])}
+                                onChange={(e) => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                        const reader = new FileReader();
+                                        reader.onload = () => {
+                                            setRawImage(reader.result); // base64 para el cropper
+                                            setShowCropper(true);
+                                        };
+                                        reader.readAsDataURL(file);
+                                    }
+                                }}
                                 required
                             />
                         </div>
@@ -368,17 +382,26 @@ const CrearEvento = () => {
                                 {loading ? 'Creando…' : 'Crear Evento'}
                             </button>
 
-                            {tipoUsuario === 1 && (
+                            {tipoUsuario !== 6 && tipoUsuario !== 7 && (
                                 <div className="alert alert-info mt-4" role="alert">
                                     <strong>Nota:</strong> Los estudiantes solo pueden crear eventos de
                                     tipo <em> Evento Informal</em>. Los eventos que creen deberán ser aprobados por un
                                     administrador antes de publicarse.
                                 </div>
                             )}
+
                         </div>
 
 
                     </form>
+                    {showCropper && rawImage && (
+    <ImageCropper
+        image={rawImage}
+        onClose={() => setShowCropper(false)}
+        onCrop={(croppedFile) => setImagen(croppedFile)}
+    />
+)}
+
                 </EventWrapper>
             </AuthBackground>
         </>

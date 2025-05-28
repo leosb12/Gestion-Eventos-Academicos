@@ -402,6 +402,19 @@ const DetalleEvento = () => {
 
                 <div className="row">
                     <div className="col-md-7">
+                        {evento.id_estado === 1 && (
+                            <span className="badge bg-success fs-6 mb-2">Inscripción Abierta</span>
+                        )}
+                        {evento.id_estado === 2 && (
+                            <span className="badge bg-warning text-dark fs-6 mb-2">En Proceso</span>
+                        )}
+                        {evento.id_estado === 3 && (
+                            <span className="badge bg-secondary fs-6 mb-2">Finalizado</span>
+                        )}
+                        {evento.id_estado === 4 && (
+                            <span className="badge bg-danger fs-6 mb-2">Cancelado</span>
+                        )}
+
                         <h2 className="fw-bold">{evento.nombre}</h2>
                         <p className="mt-3">{evento.descripcion}</p>
                     </div>
@@ -412,13 +425,21 @@ const DetalleEvento = () => {
                                 <div className="col">
                                     <p className="text-center fw-semibold mb-2">Empieza el:</p>
                                     <p className="text-center fs-5 mb-4">
-                                        {new Date(evento.fechainicio).toLocaleDateString()}
+                                        <p className="text-center fs-5 mb-4">
+                                            {evento.fechainicio?.split('-').reverse().join('/')}
+                                        </p>
+
+
                                     </p>
                                 </div>
                                 <div className="col">
                                     <p className="text-center fw-semibold mb-2">Termina el:</p>
                                     <p className="text-center fs-5 mb-4">
-                                        {new Date(evento.fechafin).toLocaleDateString()}
+                                        <p className="text-center fs-5 mb-4">
+                                            {evento.fechafin?.split('-').reverse().join('/')}
+                                        </p>
+
+
                                     </p>
                                 </div>
                             </div>

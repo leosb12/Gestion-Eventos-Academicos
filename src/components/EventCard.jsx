@@ -4,18 +4,16 @@ import {useNavigate} from 'react-router-dom';
 const EventCard = ({evento}) => {
     const navigate = useNavigate();
 
+    console.log("🟦 Evento desde padre:", evento);
+
     const handleClick = () => {
         navigate(`/evento/${evento.id}`);
     };
 
     const formatearFecha = (fechaStr) => {
-        if (!fechaStr) return null;
-        const fecha = new Date(fechaStr);
-        return isNaN(fecha) ? null : fecha.toLocaleDateString('es-BO', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-        });
+        if (!fechaStr) return '';
+        const [year, month, day] = fechaStr.split('-');
+        return `${day}/${month}/${year}`;
     };
 
     const fechaInicio = formatearFecha(evento.fechainicio);
@@ -24,6 +22,24 @@ const EventCard = ({evento}) => {
     const descripcionLimitada = (texto, limite) => {
         if (!texto) return '';
         return texto.length > limite ? texto.slice(0, limite) + '...' : texto;
+    };
+
+    const estadoColor = {
+        1: 'success',
+        2: 'secondary',
+        3: 'info',
+        4: 'primary',
+        5: 'dark',
+        6: 'danger'
+    };
+
+    const estadoNombre = {
+        1: 'Inscripción Abierta',
+        2: 'Inscripción Cerrada',
+        3: 'Próximamente',
+        4: 'En Curso',
+        5: 'Finalizado',
+        6: 'Cancelado'
     };
 
     return (
@@ -41,10 +57,19 @@ const EventCard = ({evento}) => {
                         {descripcionLimitada(evento.descripcion, 100)}
                     </p>
                     {fechaInicio && fechaFin && (
-                        <p className="text-muted small mb-0">
+                        <p className="text-muted small mb-1">
                             {fechaInicio} - {fechaFin}
                         </p>
                     )}
+                    {evento.id_estado && (
+                        <div className="d-flex justify-content-center mt-2">
+    <span className={`px-3 py-1 rounded-pill text-white bg-${estadoColor[evento.id_estado]}`}
+          style={{fontSize: '0.85rem', fontWeight: 500}}>
+      {estadoNombre[evento.id_estado] || 'Desconocido'}
+    </span>
+                        </div>
+                    )}
+
                 </div>
             </div>
         </div>

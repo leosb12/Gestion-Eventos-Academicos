@@ -21,11 +21,14 @@ const App = () => {
 
     useEffect(() => {
         if (location.state?.eventoCreado) {
-            toast.success('Evento creado correctamente');
-            // Limpia el estado para evitar que se repita si se recarga
-            window.history.replaceState({}, document.title);
+            toast.success('Evento creado correctamente. No olvides revisar “Mis Eventos” para gestionarlo.”');
+
+            // Espera 1ms para permitir que el toast se dispare antes de limpiar
+            setTimeout(() => {
+                window.history.replaceState({}, document.title);
+            }, 1);
         }
-    }, [location.state]);
+    }, [location]);
 
     return (
         <>
