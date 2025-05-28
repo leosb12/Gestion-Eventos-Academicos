@@ -22,6 +22,7 @@ import InscribirEquipo from "./pages/InscribirEquipo.jsx";
 import EventosInscritos from './pages/EventosInscritos';
 import PublicRoute from "./components/PublicRoute.jsx";
 import DefinirProyecto from './pages/DefinirProyecto.jsx';
+import Bitacora from "./pages/Bitacora.jsx";
 
 export const router = createBrowserRouter([
     {
@@ -164,6 +165,14 @@ export const router = createBrowserRouter([
                 element: (
                     <PrivateRoute>
                         <DefinirProyecto/>
+                    </PrivateRoute>
+                )
+            },
+            {
+                path: "bitacora",
+                element: (
+                    <PrivateRoute>
+                        <Bitacora/>
                     </PrivateRoute>
                 )
             }

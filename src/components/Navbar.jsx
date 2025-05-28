@@ -257,6 +257,19 @@ export default function Navbar() {
                                             Eliminar Usuario
                                         </NavLink>
                                     </li>
+                                    <li>
+                                        <hr className="dropdown-divider" />
+                                    </li>
+                                    <li>
+                                        <NavLink
+                                            to="/bitacora"
+                                            className={({isActive}) =>
+                                                `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                                            }
+                                        >
+                                            Bitácora
+                                        </NavLink>
+                                    </li>
                                 </ul>
                             </li>
                         )}
