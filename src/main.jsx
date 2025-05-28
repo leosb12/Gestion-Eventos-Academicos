@@ -6,13 +6,19 @@ import {AuthContextProvider} from './context/AuthContext.jsx'
 import {ToastContainer} from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
+import { ThemeProvider, createTheme } from '@mui/material/styles'
+const theme = createTheme();
+
 createRoot(document.getElementById('root')).render(
-    <StrictMode>
-        <AuthContextProvider>
-            <>
-                <RouterProvider router={router}/>
-                <ToastContainer hideProgressBar="true" position="top-right" autoClose={3000}/>
-            </>
-        </AuthContextProvider>
-    </StrictMode>,
+  <StrictMode>
+    <ThemeProvider theme={theme}>
+      <AuthContextProvider>
+        <>
+          <RouterProvider router={router} />
+          <ToastContainer hideProgressBar={true} position="top-right" autoClose={3000} />
+        </>
+      </AuthContextProvider>
+    </ThemeProvider>
+  </StrictMode>
 )
+
