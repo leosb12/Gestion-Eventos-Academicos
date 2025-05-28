@@ -9,7 +9,7 @@ const Bitacora = () => {
   const [filtro, setFiltro] = useState('');
   const navigate = useNavigate();
 
-  // Verifica que sea admin
+  // 1️⃣ Verifica que sea admin
   useEffect(() => {
     const verificarPermiso = async () => {
       const { data: sessionData } = await supabase.auth.getUser();
@@ -26,13 +26,13 @@ const Bitacora = () => {
     verificarPermiso();
   }, [navigate]);
 
-  // Carga logs una vez verificado
+  // 2️⃣ Carga logs una vez verificado
   useEffect(() => {
     if (!verificado) return;
     (async () => {
       const { data } = await supabase
         .from('bitacora')
-        .select('actor_email,accion,description,created_at')
+        .select('actor_email,actor_ip,accion,description,created_at')
         .order('created_at', { ascending: false });
       setLogs(data || []);
     })();
@@ -42,14 +42,14 @@ const Bitacora = () => {
     return <p className="text-center mt-5">Verificando acceso…</p>;
   }
 
-  // Filtra en memoria por email o descripción
+  // 3️⃣ Filtra en memoria por email o descripción
   const filtered = logs.filter(
     l =>
       l.actor_email.toLowerCase().includes(filtro.toLowerCase()) ||
       l.description.toLowerCase().includes(filtro.toLowerCase())
   );
 
-  // Decide color de badge según tipo
+  // 4️⃣ Decide color de badge según tipo de acción
   const badgeVariant = accion => {
     if (accion.startsWith('INSERT')) return 'success';
     if (accion.startsWith('DELETE')) return 'danger';
@@ -68,37 +68,37 @@ const Bitacora = () => {
               type="text"
               className="form-control w-auto"
               style={{ minWidth: 200 }}
-              placeholder="Filtrar…"
+              placeholder="Filtrar por usuario o descripción…"
               value={filtro}
               onChange={e => setFiltro(e.target.value)}
             />
           </div>
           <div className="card-body p-0">
-            <div className="table-responsive">
-              <table className="table table-striped table-hover mb-0">
-                <thead>
+            <div className="table-responsive" style={{ maxHeight: '60vh' }}>
+              <table className="table table-striped table-hover table-sm mb-0">
+                <thead className="bg-light">
                   <tr>
-                    <th>Usuario</th>
-                    <th>Acción</th>
-                    <th>Descripción</th>
-                    <th>Fecha y hora</th>
+                    <th scope="col" className="fw-semibold text-uppercase fs-6">Usuario</th>
+                    <th scope="col" className="fw-semibold text-uppercase fs-6">IP</th>
+                    <th scope="col" className="fw-semibold text-uppercase fs-6">Acción</th>
+                    <th scope="col" className="fw-semibold text-uppercase fs-6">Descripción</th>
+                    <th scope="col" className="fw-semibold text-uppercase fs-6">Fecha y hora</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map((log, i) => (
                     <tr key={i}>
-                      <td>{log.actor_email}</td>
+                      <td className="fw-medium">{log.actor_email}</td>
+                      <td className="text-nowrap">{log.actor_ip || '—'}</td>
                       <td>
-                        <span
-                          className={`badge bg-${badgeVariant(
-                            log.accion
-                          )} text-uppercase`}
-                        >
+                        <span className={`badge bg-${badgeVariant(log.accion)} text-uppercase`}>
                           {log.accion.replace('_', ' ')}
                         </span>
                       </td>
-                      <td>{log.description}</td>
-                      <td>
+                      <td className="text-truncate" style={{ maxWidth: 300 }}>
+                        {log.description}
+                      </td>
+                      <td className="text-nowrap">
                         {new Date(log.created_at).toLocaleString(undefined, {
                           hour12: false
                         })}
@@ -107,7 +107,7 @@ const Bitacora = () => {
                   ))}
                   {filtered.length === 0 && (
                     <tr>
-                      <td colSpan={4} className="text-center py-4 text-muted">
+                      <td colSpan={5} className="text-center py-4 text-muted">
                         No hay registros que mostrar
                       </td>
                     </tr>
