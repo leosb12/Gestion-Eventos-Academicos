@@ -378,12 +378,17 @@ const DetalleEventoCreador = () => {
                                                                             <p>
                                                                                 <strong>Descripción:</strong> {equipo.proyecto.descripcion}
                                                                             </p>
-                                                                            <a href={equipo.proyecto.url_informe}
-                                                                               className="btn btn-outline-primary"
-                                                                               target="_blank"
-                                                                               rel="noopener noreferrer">
-                                                                                Ver Proyecto
-                                                                            </a>
+                                                                            {equipo.proyecto.url_informe ? (
+                                                                                <a href={equipo.proyecto.url_informe}
+                                                                                   className="btn btn-outline-primary"
+                                                                                   target="_blank"
+                                                                                   rel="noopener noreferrer">
+                                                                                    Ver Proyecto
+                                                                                </a>
+                                                                            ) : (
+                                                                                <p className="text-muted">❌ No se ha
+                                                                                    subido el informe del proyecto.</p>
+                                                                            )}
                                                                         </>
                                                                     ) : (
                                                                         <p className="text-muted">❌ No se ha registrado
