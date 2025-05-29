@@ -9,32 +9,34 @@ import {toast, ToastContainer} from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import {UserAuth} from '../context/AuthContext';
 import ImageCropper from '../components/ImageCropper.jsx';
+
 function convertToSquareWithBlackBackground(base64Image) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      const size = Math.max(img.width, img.height);
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const size = Math.max(img.width, img.height);
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
 
-      canvas.width = size;
-      canvas.height = size;
+            canvas.width = size;
+            canvas.height = size;
 
-      // fondo negro
-      ctx.fillStyle = 'black';
-      ctx.fillRect(0, 0, size, size);
+            // fondo negro
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, size, size);
 
-      // centrar la imagen original
-      const dx = (size - img.width) / 2;
-      const dy = (size - img.height) / 2;
+            // centrar la imagen original
+            const dx = (size - img.width) / 2;
+            const dy = (size - img.height) / 2;
 
-      ctx.drawImage(img, dx, dy);
+            ctx.drawImage(img, dx, dy);
 
-      resolve(canvas.toDataURL('image/jpeg'));
-    };
-    img.src = base64Image;
-  });
+            resolve(canvas.toDataURL('image/jpeg'));
+        };
+        img.src = base64Image;
+    });
 }
+
 const CrearEvento = () => {
     const {user, tipoUsuario} = UserAuth();
     const esAdmin = tipoUsuario === 6 || tipoUsuario === 7;
@@ -45,6 +47,7 @@ const CrearEvento = () => {
     const [fechaInicio, setFechaInicio] = useState('');
     const [fechaFin, setFechaFin] = useState('');
     const [ubicacion, setUbicacion] = useState('');
+    const [ubicaciones, setUbicaciones] = useState([]);
     const [tipoEvento, setTipoEvento] = useState('');
     const [imagen, setImagen] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -55,18 +58,23 @@ const CrearEvento = () => {
     const [modalidad, setModalidad] = useState('');
     const [dia, setDia] = useState('');
     const [bloquesHorarios, setBloquesHorarios] = useState([]);
-const [claveAsistencia, setClaveAsistencia] = useState('');
-const [showCropper, setShowCropper] = useState(false);
-const [rawImage, setRawImage] = useState(null);
+    const [claveAsistencia, setClaveAsistencia] = useState('');
+    const [showCropper, setShowCropper] = useState(false);
+    const [rawImage, setRawImage] = useState(null);
 
 
     useEffect(() => {
-        const fetchHorarios = async () => {
-            const {data, error} = await supabase.from('horario').select('*');
-            if (!error) setHorarios(data);
+        const fetchData = async () => {
+            const {data: horariosData, error: horariosError} = await supabase.from('horario').select('*');
+            if (!horariosError) setHorarios(horariosData);
+
+            const {data: ubicacionesData, error: ubicacionesError} = await supabase.from('ubicacion').select('*');
+            if (!ubicacionesError) setUbicaciones(ubicacionesData);
         };
-        fetchHorarios();
+
+        fetchData();
     }, []);
+
 
     const agregarBloqueHorario = () => {
         if (horarioInicio && horarioFin && modalidad && dia) {
@@ -137,25 +145,25 @@ const [rawImage, setRawImage] = useState(null);
             let imagenUrl = null;
 
             if (imagen) {
-    const fileExt = 'jpg'; // asumimos que el cropper devuelve JPEG
-    const fileName = `${Date.now()}.${fileExt}`;
-    const filePath = fileName;
+                const fileExt = 'jpg'; // asumimos que el cropper devuelve JPEG
+                const fileName = `${Date.now()}.${fileExt}`;
+                const filePath = fileName;
 
-    const {error: uploadError} = await supabase.storage
-        .from('event-images')
-        .upload(filePath, imagen);
+                const {error: uploadError} = await supabase.storage
+                    .from('event-images')
+                    .upload(filePath, imagen);
 
-    if (uploadError) {
-        toast.error('Error subiendo la imagen.');
-        return;
-    }
+                if (uploadError) {
+                    toast.error('Error subiendo la imagen.');
+                    return;
+                }
 
-    const {data: publicUrlData} = supabase.storage
-        .from('event-images')
-        .getPublicUrl(filePath);
+                const {data: publicUrlData} = supabase.storage
+                    .from('event-images')
+                    .getPublicUrl(filePath);
 
-    imagenUrl = publicUrlData?.publicUrl || null;
-}
+                imagenUrl = publicUrlData?.publicUrl || null;
+            }
 
 
             const {data: insertedEvento, error: insertError} = await supabase
@@ -316,17 +324,17 @@ const [rawImage, setRawImage] = useState(null);
                                 accept="image/*"
                                 className="form-control"
                                 onChange={(e) => {
-  const file = e.target.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const cuadrada = await convertToSquareWithBlackBackground(reader.result);
-      setRawImage(cuadrada); // ahora la imagen es cuadrada con fondo negro si hacía falta
-      setShowCropper(true);
-    };
-    reader.readAsDataURL(file);
-  }
-}}
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                        const reader = new FileReader();
+                                        reader.onload = async () => {
+                                            const cuadrada = await convertToSquareWithBlackBackground(reader.result);
+                                            setRawImage(cuadrada); // ahora la imagen es cuadrada con fondo negro si hacía falta
+                                            setShowCropper(true);
+                                        };
+                                        reader.readAsDataURL(file);
+                                    }
+                                }}
 
                                 required
                             />
@@ -364,6 +372,24 @@ const [rawImage, setRawImage] = useState(null);
                                 />
                             </div>
                         </div>
+                        <div className="mb-3">
+                            <label className="form-label">Ubicación del Evento:</label>
+                            <select
+                                className="form-select"
+                                value={ubicacion}
+                                onChange={e => setUbicacion(e.target.value)}
+                                required
+                            >
+                                <option value="">Selecciona ubicación...</option>
+                                {ubicaciones.map(u => (
+                                    <option key={u.id} value={u.id}>
+                                        {u.lugar}
+                                    </option>
+                                ))}
+
+                            </select>
+                        </div>
+
 
                         <div className="row mb-4">
                             <div className="col">
@@ -427,12 +453,12 @@ const [rawImage, setRawImage] = useState(null);
 
                     </form>
                     {showCropper && rawImage && (
-    <ImageCropper
-        image={rawImage}
-        onClose={() => setShowCropper(false)}
-        onCrop={(croppedFile) => setImagen(croppedFile)}
-    />
-)}
+                        <ImageCropper
+                            image={rawImage}
+                            onClose={() => setShowCropper(false)}
+                            onCrop={(croppedFile) => setImagen(croppedFile)}
+                        />
+                    )}
 
                 </EventWrapper>
             </AuthBackground>
