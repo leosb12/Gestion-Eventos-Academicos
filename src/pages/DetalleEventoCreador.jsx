@@ -18,6 +18,9 @@ const DetalleEventoCreador = () => {
     const [estados, setEstados] = useState([]);
     const [editando, setEditando] = useState(false);
     const [form, setForm] = useState({nombre: '', descripcion: '', fechainicio: '', fechafin: '', nuevaImagen: null});
+    const [equipos, setEquipos] = useState([]);
+    const [equipoExpandido, setEquipoExpandido] = useState(null);
+    const [subSeccionesAbiertas, setSubSeccionesAbiertas] = useState({});
 
     useEffect(() => {
         const fetchData = async () => {
@@ -62,35 +65,80 @@ const DetalleEventoCreador = () => {
     useEffect(() => {
         if (!evento) return;
 
-        const obtenerDatos = async () => {
-            const {data, error} = await supabase
-                .from('inscripcionevento')
-                .select('id_usuario')
-                .eq('id_evento', evento.id);
+        const cargarInscritosOEquipos = async () => {
+            if (evento.id_tevento === 2 || evento.id_tevento === 4) {
+                const {data: equiposData} = await supabase
+                    .from('equipo')
+                    .select('id, nombre, id_lider')
+                    .eq('id_evento', evento.id);
 
-            if (error) {
-                toast.error('Error al cargar inscritos');
-                return;
+                const equiposCompletos = await Promise.all(equiposData.map(async (equipo) => {
+                    const {data: lider} = await supabase
+                        .from('usuario')
+                        .select('nombre')
+                        .eq('id', equipo.id_lider)
+                        .maybeSingle();
+
+                    const {data: miembros} = await supabase
+                        .from('miembrosequipo')
+                        .select('id_usuario')
+                        .eq('id_equipo', equipo.id);
+
+                    const idsMiembros = miembros.map(m => m.id_usuario);
+                    const {data: usuarios} = await supabase
+                        .from('usuario')
+                        .select('id, nombre, correo')
+                        .in('id', idsMiembros);
+
+                    const {data: asistencias} = await supabase
+                        .from('asistencia')
+                        .select('id_usuario')
+                        .eq('id_evento', evento.id);
+
+                    const {data: proyecto} = await supabase
+                        .from('proyecto')
+                        .select('nombre, descripcion, url_informe')
+                        .eq('id_equipo', equipo.id)
+                        .maybeSingle();
+
+                    return {
+                        ...equipo,
+                        nombre_lider: lider?.nombre,
+                        miembros: usuarios,
+                        asistencias: asistencias?.map(a => a.id_usuario) || [],
+                        proyecto
+                    };
+                }));
+
+                setEquipos(equiposCompletos);
+            } else {
+                const {data, error} = await supabase
+                    .from('inscripcionevento')
+                    .select('id_usuario')
+                    .eq('id_evento', evento.id);
+
+                if (error) {
+                    toast.error('Error al cargar inscritos');
+                    return;
+                }
+
+                const idsUsuarios = data.map(row => row.id_usuario);
+                if (idsUsuarios.length === 0) {
+                    setInscritos([]);
+                    return;
+                }
+
+                const [{data: usuarios}, {data: asistencias}] = await Promise.all([
+                    supabase.from('usuario').select('id, nombre, correo').in('id', idsUsuarios),
+                    supabase.from('asistencia').select('id_usuario').eq('id_evento', evento.id)
+                ]);
+
+                setInscritos(usuarios);
+                setAsistencias(asistencias?.map(a => a.id_usuario) || []);
             }
-
-            const idsUsuarios = data.map(row => row.id_usuario);
-            if (idsUsuarios.length === 0) {
-                setInscritos([]);
-                return;
-            }
-
-            const [{data: usuarios}, {data: asistencias}] = await Promise.all([
-                supabase.from('usuario').select('id, nombre, correo').in('id', idsUsuarios),
-                supabase.from('asistencia').select('id_usuario').eq('id_evento', evento.id)
-            ])
-
-
-            setInscritos(usuarios);
-            setAsistencias((asistencias || []).map(a => a.id_usuario));
-
         };
 
-        obtenerDatos();
+        cargarInscritosOEquipos();
     }, [evento]);
 
     const eliminarEvento = async () => {
@@ -224,39 +272,176 @@ const DetalleEventoCreador = () => {
 
                 <hr/>
 
-                <h4 className="mb-3">👥 Participantes Inscritos</h4>
-                {inscritos.length === 0 ? (
-                    <p className="text-secondary">No hay inscritos todavía.</p>
+                {(evento.id_tevento === 2 || evento.id_tevento === 4) ? (
+                    <>
+                        <h4 className="mb-3">🧑‍🤝‍🧑 Grupos Inscritos</h4>
+                        {equipos.length === 0 ? (
+                            <p className="text-secondary">No hay equipos registrados aún.</p>
+                        ) : (
+                            <div className="accordion" id="equiposAccordion">
+                                {equipos.map((equipo) => (
+                                    <div className="accordion-item" key={equipo.id}>
+                                        <h2 className="accordion-header">
+                                            <button
+                                                className={`accordion-button ${equipoExpandido === equipo.id ? '' : 'collapsed'}`}
+                                                type="button"
+                                                onClick={() => setEquipoExpandido(equipoExpandido === equipo.id ? null : equipo.id)}>
+                                                {equipo.nombre} — Lider: {equipo.nombre_lider}
+                                            </button>
+                                        </h2>
+                                        <div
+                                            className={`accordion-collapse collapse ${equipoExpandido === equipo.id ? 'show' : ''}`}>
+                                            <div className="accordion-body">
+                                                <div className="mb-2">
+                                                    <div className="accordion my-2"
+                                                         id={`subAccordionMiembros${equipo.id}`}>
+                                                        <div className="accordion-item">
+                                                            <h2 className="accordion-header">
+                                                                <button
+                                                                    className={`accordion-button collapsed bg-light fw-semibold`}
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        setSubSeccionesAbiertas(prev => ({
+                                                                            ...prev,
+                                                                            [equipo.id]: {
+                                                                                ...(prev[equipo.id] || {}),
+                                                                                miembros: !(prev[equipo.id]?.miembros)
+                                                                            }
+                                                                        }))
+                                                                    }>
+                                                                    👥 Miembros del Equipo
+                                                                </button>
+                                                            </h2>
+                                                            <div
+                                                                className={`accordion-collapse collapse ${subSeccionesAbiertas[equipo.id]?.miembros ? 'show' : ''}`}>
+                                                                <div className="accordion-body table-responsive">
+                                                                    <table
+                                                                        className="table table-sm table-bordered text-center align-middle">
+                                                                        <thead className="table-secondary">
+                                                                        <tr>
+                                                                            <th>ID</th>
+                                                                            <th>Nombre</th>
+                                                                            <th>Correo</th>
+                                                                            <th>Asistencia</th>
+                                                                        </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                        {equipo.miembros.map((u) => (
+                                                                            <tr key={u.id}>
+                                                                                <td>{u.id}</td>
+                                                                                <td>{u.nombre}</td>
+                                                                                <td>{u.correo}</td>
+                                                                                <td>
+                                                                                    {equipo.asistencias.includes(u.id)
+                                                                                        ? <span
+                                                                                            className="badge bg-success">Asistió</span>
+                                                                                        : <span
+                                                                                            className="badge bg-danger">Falta</span>}
+                                                                                </td>
+                                                                            </tr>
+                                                                        ))}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div>
+                                                    <div className="accordion my-2"
+                                                         id={`subAccordionProyecto${equipo.id}`}>
+                                                        <div className="accordion-item">
+                                                            <h2 className="accordion-header">
+                                                                <button
+                                                                    className={`accordion-button collapsed bg-light fw-semibold`}
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        setSubSeccionesAbiertas(prev => ({
+                                                                            ...prev,
+                                                                            [equipo.id]: {
+                                                                                ...(prev[equipo.id] || {}),
+                                                                                proyecto: !(prev[equipo.id]?.proyecto)
+                                                                            }
+                                                                        }))
+                                                                    }>
+                                                                    📄 Proyecto
+                                                                </button>
+                                                            </h2>
+                                                            <div
+                                                                className={`accordion-collapse collapse ${subSeccionesAbiertas[equipo.id]?.proyecto ? 'show' : ''}`}>
+                                                                <div className="accordion-body">
+                                                                    {equipo.proyecto ? (
+                                                                        <>
+                                                                            <p>
+                                                                                <strong>Nombre:</strong> {equipo.proyecto.nombre}
+                                                                            </p>
+                                                                            <p>
+                                                                                <strong>Descripción:</strong> {equipo.proyecto.descripcion}
+                                                                            </p>
+                                                                            {equipo.proyecto.url_informe ? (
+                                                                                <a href={equipo.proyecto.url_informe}
+                                                                                   className="btn btn-outline-primary"
+                                                                                   target="_blank"
+                                                                                   rel="noopener noreferrer">
+                                                                                    Ver Proyecto
+                                                                                </a>
+                                                                            ) : (
+                                                                                <p className="text-muted">❌ No se ha
+                                                                                    subido el informe del proyecto.</p>
+                                                                            )}
+                                                                        </>
+                                                                    ) : (
+                                                                        <p className="text-muted">❌ No se ha registrado
+                                                                            un proyecto.</p>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </>
                 ) : (
-                    <div className="table-responsive shadow rounded">
-                        <table className="table table-striped table-light align-middle">
-                            <thead className="table-primary text-center">
-                            <tr>
-                                <th scope="col">Registro</th>
-                                <th scope="col">Nombre</th>
-                                <th scope="col">Correo</th>
-                                <th scope="col">Asistencia</th>
-                            </tr>
-                            </thead>
-                            <tbody className="text-center">
-                            {inscritos.map((usuario) => (
-                                <tr key={usuario.id}>
-                                    <td>{usuario.id}</td>
-                                    <td>{usuario.nombre}</td>
-                                    <td>{usuario.correo}</td>
-                                    <td>
-
-                                        {asistencias.includes(usuario.id) ? (
-                                            <span className="badge bg-success">Asistió</span>
-                                        ) : (
-                                            <span className="badge bg-danger">Falta</span>
-                                        )}
-                                    </td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
-                    </div>
+                    <>
+                        <h4 className="mb-3">👥 Participantes Inscritos</h4>
+                        {inscritos.length === 0 ? (
+                            <p className="text-secondary">No hay inscritos todavía.</p>
+                        ) : (
+                            <div className="table-responsive shadow rounded">
+                                <table className="table table-striped table-light align-middle">
+                                    <thead className="table-primary text-center">
+                                    <tr>
+                                        <th scope="col">Registro</th>
+                                        <th scope="col">Nombre</th>
+                                        <th scope="col">Correo</th>
+                                        <th scope="col">Asistencia</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody className="text-center">
+                                    {inscritos.map((usuario) => (
+                                        <tr key={usuario.id}>
+                                            <td>{usuario.id}</td>
+                                            <td>{usuario.nombre}</td>
+                                            <td>{usuario.correo}</td>
+                                            <td>
+                                                {asistencias.includes(usuario.id) ? (
+                                                    <span className="badge bg-success">Asistió</span>
+                                                ) : (
+                                                    <span className="badge bg-danger">Falta</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
             <ToastContainer position="top-right" autoClose={3000} hideProgressBar/>
