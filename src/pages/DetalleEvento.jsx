@@ -354,74 +354,71 @@ const DetalleEvento = () => {
         try {
             const tipoEvento = parseInt(evento?.id_tevento ?? 0);
 
-            // Buscar todos los equipos del usuario
-            const {data: miembrosEquipo, error: errorMiembrosEquipo} = await supabase
-                .from('miembrosequipo')
-                .select('id_equipo')
-                .eq('id_usuario', usuarioId);
-
-            if (errorMiembrosEquipo || !miembrosEquipo || miembrosEquipo.length === 0) {
-                throw new Error("No se encontró el equipo del usuario.");
-            }
-
-            // Verificamos a qué equipo del evento actual pertenece
-            let idEquipo = null;
-
-            for (const m of miembrosEquipo) {
-                const {data: eqEvento} = await supabase
-                    .from('equipo')
-                    .select('id_evento')
-                    .eq('id', m.id_equipo)
-                    .maybeSingle();
-
-                if (eqEvento?.id_evento === parseInt(id)) {
-                    idEquipo = m.id_equipo;
-                    break;
-                }
-            }
-
-            if ((tipoEvento === 2 || tipoEvento === 4) && idEquipo) {
-                const {data: equipo} = await supabase
-                    .from('equipo')
-                    .select('id, id_lider')
-                    .eq('id', idEquipo)
-                    .maybeSingle();
-
-                const {data: miembros} = await supabase
+            if (tipoEvento === 2 || tipoEvento === 4) {
+                // Buscar todos los equipos del usuario
+                const { data: miembrosEquipo, error: errorMiembrosEquipo } = await supabase
                     .from('miembrosequipo')
-                    .select('id_usuario')
-                    .eq('id_equipo', idEquipo);
+                    .select('id_equipo')
+                    .eq('id_usuario', usuarioId);
 
-                const idsMiembros = miembros.map(m => m.id_usuario);
-
-                if (equipo.id_lider === usuarioId) {
-                    // Es líder → eliminar TODO
-                    await supabase.from('proyecto').delete().eq('id_equipo', idEquipo);
-                    await supabase.from('asistencia').delete().in('id_usuario', idsMiembros).eq('id_evento', id);
-                    await supabase.from('inscripcionevento').delete().in('id_usuario', idsMiembros).eq('id_evento', id);
-                    await supabase.from('miembrosequipo').delete().eq('id_equipo', idEquipo);
-                    await supabase.from('nivelgrupo').delete().eq('id_equipo', idEquipo);
-                    await supabase.from('equipo').delete().eq('id', idEquipo);
-
-                    toast.success('Se canceló la inscripción del equipo completo.');
-                } else {
-                    // Es miembro → eliminar solo a sí mismo
-                    await supabase.from('inscripcionevento').delete().match({id_evento: id, id_usuario: usuarioId});
-                    await supabase.from('asistencia').delete().match({id_evento: id, id_usuario: usuarioId});
-                    await supabase.from('miembrosequipo').delete().match({id_usuario: usuarioId, id_equipo: idEquipo});
-
-                    toast.success('Te has salido del equipo correctamente.');
+                if (errorMiembrosEquipo || !miembrosEquipo || miembrosEquipo.length === 0) {
+                    throw new Error("No se encontró el equipo del usuario.");
                 }
 
-                await fetchEquiposIncompletos(evento.id);
-            } else {
-                // Evento normal (no tipo feria ni hackaton)
-                await supabase.from('inscripcionevento').delete().match({id_evento: id, id_usuario: usuarioId});
-                await supabase.from('asistencia').delete().match({id_evento: id, id_usuario: usuarioId});
+                let idEquipo = null;
+                for (const m of miembrosEquipo) {
+                    const { data: eqEvento } = await supabase
+                        .from('equipo')
+                        .select('id_evento')
+                        .eq('id', m.id_equipo)
+                        .maybeSingle();
 
-                toast.success('Cancelación completada correctamente.');
+                    if (eqEvento?.id_evento === parseInt(id)) {
+                        idEquipo = m.id_equipo;
+                        break;
+                    }
+                }
+
+                if (idEquipo) {
+                    const { data: equipo } = await supabase
+                        .from('equipo')
+                        .select('id, id_lider')
+                        .eq('id', idEquipo)
+                        .maybeSingle();
+
+                    const { data: miembros } = await supabase
+                        .from('miembrosequipo')
+                        .select('id_usuario')
+                        .eq('id_equipo', idEquipo);
+
+                    const idsMiembros = miembros.map(m => m.id_usuario);
+
+                    if (equipo.id_lider === usuarioId) {
+                        await supabase.from('proyecto').delete().eq('id_equipo', idEquipo);
+                        await supabase.from('asistencia').delete().in('id_usuario', idsMiembros).eq('id_evento', id);
+                        await supabase.from('inscripcionevento').delete().in('id_usuario', idsMiembros).eq('id_evento', id);
+                        await supabase.from('miembrosequipo').delete().eq('id_equipo', idEquipo);
+                        await supabase.from('nivelgrupo').delete().eq('id_equipo', idEquipo);
+                        await supabase.from('equipo').delete().eq('id', idEquipo);
+                        toast.success('Se canceló la inscripción del equipo completo.');
+                    } else {
+                        await supabase.from('inscripcionevento').delete().match({ id_evento: id, id_usuario: usuarioId });
+                        await supabase.from('asistencia').delete().match({ id_evento: id, id_usuario: usuarioId });
+                        await supabase.from('miembrosequipo').delete().match({ id_usuario: usuarioId, id_equipo: idEquipo });
+                        toast.success('Te has salido del equipo correctamente.');
+                    }
+
+                    await fetchEquiposIncompletos(evento.id);
+                    setEstaInscrito(false);
+                    setMostrarModalCancelar(false);
+                    return;
+                }
             }
 
+            // Si no es feria ni hackatón o no tiene equipo:
+            await supabase.from('inscripcionevento').delete().match({ id_evento: id, id_usuario: usuarioId });
+            await supabase.from('asistencia').delete().match({ id_evento: id, id_usuario: usuarioId });
+            toast.success('Cancelación completada correctamente.');
             setEstaInscrito(false);
 
         } catch (err) {
@@ -431,6 +428,7 @@ const DetalleEvento = () => {
             setMostrarModalCancelar(false);
         }
     };
+
 
 
     const unirseAEquipo = async (equipoId) => {
