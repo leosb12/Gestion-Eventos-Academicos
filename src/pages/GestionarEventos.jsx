@@ -5,6 +5,8 @@ import {UserAuth} from '../context/AuthContext';
 import {toast} from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Navbar from '../components/Navbar';
+import {ToastContainer} from 'react-toastify';
+
 
 const GestionarEventos = () => {
     const {user, tipoUsuario} = UserAuth();
