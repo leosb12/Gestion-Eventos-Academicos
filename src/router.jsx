@@ -166,7 +166,7 @@ export const router = createBrowserRouter([
                 path: "editar-perfil",
                 element: (
                     <PrivateRoute>
-                        <DarRol/>
+                        <EditarPerfil/>
                     </PrivateRoute>
                 )
             },
