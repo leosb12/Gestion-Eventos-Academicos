@@ -94,19 +94,25 @@ const DarRol = () => {
     };
 
     const actualizarRol = async (idUsuario) => {
-        const nuevoRol = rolSeleccionado[idUsuario];
+      const nuevoRol = rolSeleccionado[idUsuario];
 
-        const {error} = await supabase
-            .from('usuario')
-            .update({id_tipo_usuario: nuevoRol})
-            .eq('id', idUsuario);
+      const { error } = await supabase
+        .from('usuario')
+        .update({ id_tipo_usuario: nuevoRol })
+        .eq('id', idUsuario);
 
-        if (error) {
-            setMensaje(`❌ Error al actualizar el rol del usuario ${idUsuario}`);
-        } else {
-            localStorage.setItem('mensajeExito', `✅ Rol del usuario ${idUsuario} actualizado correctamente.`);
-            window.location.reload();
-        }
+      if (error) {
+        setMensaje(`❌ Error al actualizar el rol del usuario ${idUsuario}`);
+      } else {
+        setUsuarios(prev =>
+          prev.map(u =>
+            u.id === idUsuario ? { ...u, id_tipo_usuario: nuevoRol } : u
+          )
+        );
+
+        setMensaje(`✅ Rol del usuario ${idUsuario} actualizado correctamente.`);
+        setTimeout(() => setMensaje(''), 3000);
+      }
     };
 
     if (!verificado) return <p className="text-center mt-5">Verificando acceso...</p>;

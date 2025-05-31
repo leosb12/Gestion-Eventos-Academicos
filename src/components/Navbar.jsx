@@ -3,6 +3,7 @@ import {NavLink, useLocation, useNavigate} from 'react-router-dom';
 import {UserAuth} from '../context/AuthContext.jsx';
 import supabase from '../utils/supabaseClient';
 import BuscadorEventos from './BuscadorEventos.jsx';
+import {clearCorreoCache} from '../utils/CacheUser.js';
 
 export default function Navbar() {
     const {session, tipoUsuario, signOut} = UserAuth();
@@ -48,9 +49,29 @@ export default function Navbar() {
     const handleOpenModal = () => setShowModal(true);
     const handleCancel = () => setShowModal(false);
     const handleConfirmLogout = async () => {
-        await signOut();
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+
+        if (sessionData?.session) {
+          const { error } = await supabase.auth.signOut();
+          if (error) {
+            console.warn("⚠️ No se pudo cerrar sesión en Supabase:", error.message);
+          } else {
+            console.log("✅ Sesión cerrada en Supabase.");
+          }
+        } else {
+          console.log("ℹ️ No hay sesión activa.");
+        }
+      } catch (error) {
+        console.error("❌ Error inesperado al cerrar sesión:", error.message);
+      } finally {
+        // 🧹 Limpiar cache de correo
+        clearCorreoCache();
+
+        // Cerrar modal y redirigir
         setShowModal(false);
         navigate('/iniciar-sesion');
+      }
     };
 
     return (
