@@ -3,7 +3,7 @@ import {NavLink, useLocation, useNavigate} from 'react-router-dom';
 import {UserAuth} from '../context/AuthContext.jsx';
 import supabase from '../utils/supabaseClient';
 import BuscadorEventos from './BuscadorEventos.jsx';
-import {clearCorreoCache} from '../utils/CacheUser.js';
+import {clearCorreoCache} from '../utils/cacheUser.js';
 
 export default function Navbar() {
     const {session, tipoUsuario, signOut} = UserAuth();
