@@ -337,6 +337,34 @@ const DetalleEvento = () => {
                 if (!error) {
                     toast.success('Inscripción completada.');
                     setEstaInscrito(true);
+                    const session = await supabase.auth.getSession();
+                    const accessToken = session.data.session.access_token;
+                    const { data: usuarioData, error: errorNombre } = await supabase
+                      .from('usuario')
+                      .select('nombre')
+                      .eq('correo', user.email)
+                      .maybeSingle();
+                    const nombreUsuario = usuarioData?.nombre || 'Usuario';
+
+                    await fetch('https://sgpnyeashmuwwlpvxbgm.supabase.co/functions/v1/enviar-correo', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`
+                      },
+                      body: JSON.stringify({
+                        to: user.email,
+                        subject: '🎉 ¡Inscripción Exitosa!',
+                        html: `
+                          <h2 style="color:#007bff;">🎉 ¡Inscripción Exitosa!</h2>
+                          <p>Hola <strong>${nombreUsuario}</strong>,</p>
+                          <p>Te has inscrito exitosamente al evento <strong>${evento.nombre}</strong>.</p>
+                          <br/>
+                          <small>Este es un mensaje automático. No responder.</small>
+                        `
+                      })
+                    });
+
                 } else {
                     toast.error('Error al inscribirse al evento.');
                 }
@@ -627,41 +655,34 @@ const DetalleEvento = () => {
                     </div>
 
                     <div className="col-md-5 d-flex align-items-start justify-content-center">
-                        <section className="border rounded p-4 w-100 bg-white shadow-sm">
-                            <div className="row row-cols-1 row-cols-sm-1 row-cols-md-2">
-                                <div className="col">
-                                    <p className="text-center fw-semibold mb-2">Empieza el:</p>
-                                    <p className="text-center fs-5 mb-4">
-                                        <p className="text-center fs-5 mb-4">
-                                            {evento.fechainicio?.split('-').reverse().join('/')}
-                                        </p>
-
-
-                                    </p>
-                                </div>
-                                <div className="col">
-                                    <p className="text-center fw-semibold mb-2">Termina el:</p>
-                                    <p className="text-center fs-5 mb-4">
-                                        <p className="text-center fs-5 mb-4">
-                                            {evento.fechafin?.split('-').reverse().join('/')}
-                                        </p>
-
-
-                                    </p>
-                                </div>
+                      <section className="border rounded p-4 w-100 bg-white shadow-sm">
+                        <div className="row row-cols-1 row-cols-sm-1 row-cols-md-2">
+                          <div className="col">
+                            <p className="text-center fw-semibold mb-2">Empieza el:</p>
+                            <div className="text-center fs-5 mb-4">
+                              {evento.fechainicio?.split('-').reverse().join('/')}
                             </div>
-                            <div className="d-flex justify-content-center">
-                                {!inscripcionCargando && (
-                                    <button
-                                        className={`btn ${estaInscrito ? 'btn-secondary' : 'btn-primary'} px-4`}
-                                        onClick={manejarInscripcion}
-                                    >
-                                        {estaInscrito ? 'Cancelar inscripción' : 'Inscribirse'}
-                                    </button>
-                                )}
+                          </div>
+                          <div className="col">
+                            <p className="text-center fw-semibold mb-2">Termina el:</p>
+                            <div className="text-center fs-5 mb-4">
+                              {evento.fechafin?.split('-').reverse().join('/')}
                             </div>
-                        </section>
+                          </div>
+                        </div>
+                        <div className="d-flex justify-content-center">
+                          {!inscripcionCargando && (
+                            <button
+                              className={`btn ${estaInscrito ? 'btn-secondary' : 'btn-primary'} px-4`}
+                              onClick={manejarInscripcion}
+                            >
+                              {estaInscrito ? 'Cancelar inscripción' : 'Inscribirse'}
+                            </button>
+                          )}
+                        </div>
+                      </section>
                     </div>
+
                 </div>
 
                 <section className="d-flex justify-content-center align-items-start mt-3 p-3">

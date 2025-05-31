@@ -59,8 +59,9 @@ export const AuthContextProvider = ({ children }) => {
     const getSessionAndTipoUsuario = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
-      setUser(session?.user || null); // 👈 guardar el user completo
+      setUser(session?.user || null);
 
+      // ⚠️ Validar si el usuario autenticado sigue existiendo en la tabla "usuario"
       if (session?.user?.email) {
         const { data, error } = await supabase
           .from('usuario')
@@ -71,12 +72,19 @@ export const AuthContextProvider = ({ children }) => {
         if (!error && data) {
           setTipoUsuario(data.id_tipo_usuario);
         } else {
+          // ⚠️ El usuario ya no existe en la tabla, forzar logout y limpieza
+          await supabase.auth.signOut();
+          localStorage.clear(); // Limpia toda la sesión almacenada, incluidas las funciones de caché si están ahí
+          setSession(null);
+          setUser(null);
           setTipoUsuario(null);
+          window.location.href = "/iniciar-sesion"; // redirige
         }
-      } else {
-        setTipoUsuario(null);
-      }
-    };
+  } else {
+    setTipoUsuario(null);
+  }
+};
+
 
     getSessionAndTipoUsuario();
 

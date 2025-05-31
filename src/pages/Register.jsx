@@ -24,17 +24,14 @@ const Register = () => {
         setLoading(true);
 
         try {
-            // 🛡️ VALIDACIONES DE CAMPOS
             if (!name || !register || !date || !email || !password) {
                 throw new Error("Por favor, complete todos los campos.");
             }
 
-            // Validar que el registro sea un número válido
             if (!/^\d+$/.test(register)) {
                 throw new Error("El registro debe contener solo números.");
             }
 
-            // Verificar si ya existe en tu tabla (correo o id)
             const {data: usuarioExistente, error: fetchError} = await supabase
                 .from("usuario")
                 .select("*")
@@ -49,7 +46,6 @@ const Register = () => {
                 throw new Error("Ya existe un usuario con ese registro o correo.");
             }
 
-            // Crear usuario en Supabase Auth
             const result = await signUpNewUser(email, password);
 
             if (!result.success) {
@@ -59,7 +55,6 @@ const Register = () => {
                 throw new Error(result.error?.message || "Hubo un error al registrarse.");
             }
 
-            // Obtener el usuario recién creado
             const {
                 data: {user},
                 error: userError
@@ -69,7 +64,6 @@ const Register = () => {
                 throw new Error("Error al obtener el usuario autenticado.");
             }
 
-            // Insertar en tabla personalizada "usuario"
             const {error: insertError} = await supabase.from("usuario").insert({
                 id: register,
                 nombre: name,
@@ -82,7 +76,6 @@ const Register = () => {
                 throw new Error("Error al insertar usuario en la base de datos.");
             }
 
-            // Intentar iniciar sesión automáticamente
             const {error: loginError} = await supabase.auth.signInWithPassword({
                 email,
                 password
@@ -91,10 +84,30 @@ const Register = () => {
             if (loginError) {
                 throw new Error("Usuario creado, pero hubo un problema al iniciar sesión automáticamente.");
             }
+                   const session = await supabase.auth.getSession();
+                    const accessToken = session.data.session.access_token;
+                    const { data: usuarioData, error: errorNombre } = await supabase
+                      .from('usuario')
+                      .select('nombre')
+                      .eq('correo', user.email)
+                      .maybeSingle();
+                    const nombreUsuario = usuarioData?.nombre || 'Usuario';
+
+                    await fetch('https://sgpnyeashmuwwlpvxbgm.supabase.co/functions/v1/enviar-correo', {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`
+                      },
+                      body: JSON.stringify({
+                        to: user.email,
+                        subject: '🎉 ¡Registro Exitoso!',
+                        html: `<h2 style="color:#007bff;">✅ ¡Bienvenido a NotiFicct!</h2><p>Hola <strong>${nombreUsuario}</strong>,</p><p>Tu registro en la plataforma <strong>NotiFicct</strong> ha sido exitoso. A partir de ahora, podrás participar en eventos, gestionar tu perfil y mantenerte informado de todas las actividades académicas.</p><h4 style="margin-top: 1.5rem;">🔐 ¿Qué puedes hacer ahora?</h4><ul><li>📅 Inscribirte a eventos desde tu panel de usuario.</li><li>📝 Completar tu perfil y actualizar tus datos.</li><li>📨 Recibir notificaciones importantes directamente en tu correo.</li></ul><p>Puedes iniciar sesión ahora mismo desde el siguiente enlace:</p><p>👉 <a href="https://notificct.dpdns.org/iniciar-sesion" target="_blank" style="color:#007bff; font-weight:bold;">Iniciar Sesión</a></p><p style="color:#666;font-size:0.9em;">Este es un mensaje automático. Por favor, no respondas a este correo.</p>`
+                      })
+                    });
 
             toast.success("Bienvenido, te has registrado correctamente.");
-            navigate("/"); // o a la página que quieras redirigir
-
+            navigate("/");
 
         } catch (error) {
             toast.error(error.message || "Ha ocurrido un error.");
