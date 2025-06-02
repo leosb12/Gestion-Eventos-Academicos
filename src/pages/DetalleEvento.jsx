@@ -14,7 +14,7 @@ import GenerarQR from '../components/GenerarQR';
 
 const DetalleEvento = () => {
     const {id} = useParams()
-    const { user, tipoUsuario } = UserAuth()
+    const {user, tipoUsuario} = UserAuth()
     const navigate = useNavigate()
 
 
@@ -302,27 +302,27 @@ const DetalleEvento = () => {
         setInscripcionCargando(false);
     }
     useEffect(() => {
-  const verificarAsistencia = async () => {
-    if (!evento || !usuarioId) return;
+        const verificarAsistencia = async () => {
+            if (!evento || !usuarioId) return;
 
-    const { data: asistencia, error } = await supabase
-      .from('asistencia')
-      .select('*') // Usamos * porque no hay columna 'id'
-      .eq('id_evento', evento.id)
-      .eq('id_usuario', usuarioId)
-      .maybeSingle();
+            const {data: asistencia, error} = await supabase
+                .from('asistencia')
+                .select('*') // Usamos * porque no hay columna 'id'
+                .eq('id_evento', evento.id)
+                .eq('id_usuario', usuarioId)
+                .maybeSingle();
 
-    if (error) {
-      console.error('❌ Error al verificar asistencia:', error);
-      return;
-    }
+            if (error) {
+                console.error('❌ Error al verificar asistencia:', error);
+                return;
+            }
 
-    setAsistenciaRegistrada(!!asistencia); // true si existe, false si no
-    setAsistenciaVerificada(true); // marca que ya verificamos
-  };
+            setAsistenciaRegistrada(!!asistencia); // true si existe, false si no
+            setAsistenciaVerificada(true); // marca que ya verificamos
+        };
 
-  verificarAsistencia();
-}, [evento, usuarioId, refresco]);
+        verificarAsistencia();
+    }, [evento, usuarioId, refresco]);
 
 
     const manejarInscripcion = async () => {
@@ -369,30 +369,30 @@ const DetalleEvento = () => {
                     setEstaInscrito(true);
                     const session = await supabase.auth.getSession();
                     const accessToken = session.data.session.access_token;
-                    const { data: usuarioData, error: errorNombre } = await supabase
-                      .from('usuario')
-                      .select('nombre')
-                      .eq('correo', user.email)
-                      .maybeSingle();
+                    const {data: usuarioData, error: errorNombre} = await supabase
+                        .from('usuario')
+                        .select('nombre')
+                        .eq('correo', user.email)
+                        .maybeSingle();
                     const nombreUsuario = usuarioData?.nombre || 'Usuario';
 
                     await fetch('https://sgpnyeashmuwwlpvxbgm.supabase.co/functions/v1/enviar-correo', {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${accessToken}`
-                      },
-                      body: JSON.stringify({
-                        to: user.email,
-                        subject: '🎉 ¡Inscripción Exitosa!',
-                        html: `
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${accessToken}`
+                        },
+                        body: JSON.stringify({
+                            to: user.email,
+                            subject: '🎉 ¡Inscripción Exitosa!',
+                            html: `
                           <h2 style="color:#007bff;">🎉 ¡Inscripción Exitosa!</h2>
                           <p>Hola <strong>${nombreUsuario}</strong>,</p>
                           <p>Te has inscrito exitosamente al evento <strong>${evento.nombre}</strong>.</p>
                           <br/>
                           <small>Este es un mensaje automático. No responder.</small>
                         `
-                      })
+                        })
                     });
 
                 } else {
@@ -414,7 +414,7 @@ const DetalleEvento = () => {
 
             if (tipoEvento === 2 || tipoEvento === 4) {
                 // Buscar todos los equipos del usuario
-                const { data: miembrosEquipo, error: errorMiembrosEquipo } = await supabase
+                const {data: miembrosEquipo, error: errorMiembrosEquipo} = await supabase
                     .from('miembrosequipo')
                     .select('id_equipo')
                     .eq('id_usuario', usuarioId);
@@ -425,7 +425,7 @@ const DetalleEvento = () => {
 
                 let idEquipo = null;
                 for (const m of miembrosEquipo) {
-                    const { data: eqEvento } = await supabase
+                    const {data: eqEvento} = await supabase
                         .from('equipo')
                         .select('id_evento')
                         .eq('id', m.id_equipo)
@@ -438,13 +438,13 @@ const DetalleEvento = () => {
                 }
 
                 if (idEquipo) {
-                    const { data: equipo } = await supabase
+                    const {data: equipo} = await supabase
                         .from('equipo')
                         .select('id, id_lider')
                         .eq('id', idEquipo)
                         .maybeSingle();
 
-                    const { data: miembros } = await supabase
+                    const {data: miembros} = await supabase
                         .from('miembrosequipo')
                         .select('id_usuario')
                         .eq('id_equipo', idEquipo);
@@ -460,9 +460,12 @@ const DetalleEvento = () => {
                         await supabase.from('equipo').delete().eq('id', idEquipo);
                         toast.success('Se canceló la inscripción del equipo completo.');
                     } else {
-                        await supabase.from('inscripcionevento').delete().match({ id_evento: id, id_usuario: usuarioId });
-                        await supabase.from('asistencia').delete().match({ id_evento: id, id_usuario: usuarioId });
-                        await supabase.from('miembrosequipo').delete().match({ id_usuario: usuarioId, id_equipo: idEquipo });
+                        await supabase.from('inscripcionevento').delete().match({id_evento: id, id_usuario: usuarioId});
+                        await supabase.from('asistencia').delete().match({id_evento: id, id_usuario: usuarioId});
+                        await supabase.from('miembrosequipo').delete().match({
+                            id_usuario: usuarioId,
+                            id_equipo: idEquipo
+                        });
                         toast.success('Te has salido del equipo correctamente.');
                     }
 
@@ -474,8 +477,8 @@ const DetalleEvento = () => {
             }
 
             // Si no es feria ni hackatón o no tiene equipo:
-            await supabase.from('inscripcionevento').delete().match({ id_evento: id, id_usuario: usuarioId });
-            await supabase.from('asistencia').delete().match({ id_evento: id, id_usuario: usuarioId });
+            await supabase.from('inscripcionevento').delete().match({id_evento: id, id_usuario: usuarioId});
+            await supabase.from('asistencia').delete().match({id_evento: id, id_usuario: usuarioId});
             toast.success('Cancelación completada correctamente.');
             setEstaInscrito(false);
 
@@ -486,7 +489,6 @@ const DetalleEvento = () => {
             setMostrarModalCancelar(false);
         }
     };
-
 
 
     const unirseAEquipo = async (equipoId) => {
@@ -630,68 +632,59 @@ const DetalleEvento = () => {
                         {evento.id_estado === 6 && (
                             <span className="badge bg-danger fs-6 mb-2">Cancelado</span>
                         )}
-
                         <h2 className="fw-bold">{evento.nombre}</h2>
                         <p className="mt-3">{evento.descripcion}</p>
-
                         {/* ✅ Bloque de asistencia si el usuario está inscrito */}
                         {estaInscrito && (
                             <div className="bg-white p-4 mt-4 mb-3 rounded-4 shadow-sm border d-inline-block">
                                 <h5 className="fw-bold mb-3">Registro de Asistencia</h5>
                                 {evento?.id_estado === 4 && (
-  <>
-    {!asistenciaVerificada ? (
-      <p className="text-muted">Verificando asistencia...</p>
-    ) : asistenciaRegistrada ? (
-      <div className="alert alert-success mt-4" role="alert">
-        ✅ Su asistencia ya ha sido registrada.
-      </div>
-    ) : (
-      <div className="mt-4">
-        <p className="fw-semibold">Registrar asistencia con QR:</p>
+                                    <>
+                                        {!asistenciaVerificada ? (
+                                            <p className="text-muted">Verificando asistencia...</p>
+                                        ) : asistenciaRegistrada ? (
+                                            <div className="alert alert-success mt-4" role="alert">
+                                                ✅ Su asistencia ya ha sido registrada.
+                                            </div>
+                                        ) : (
+                                            <div className="mt-4">
+                                                <p className="fw-semibold">Registrar asistencia con QR:</p>
 
-        {!mostrarEscaner ? (
-          <button
-            className="btn btn-outline-primary"
-            onClick={() => setMostrarEscaner(true)}
-          >
-            Activar escáner
-          </button>
-        ) : (
-          <EscanearQR
-            usuarioId={usuarioId}
-            deshabilitado={false}
-            onAsistenciaRegistrada={() => {
-              setAsistenciaRegistrada(true);
-              setMostrarEscaner(false);
-              setRefresco((prev) => prev + 1);
-            }}
-          />
-        )}
-
-        <SubirQR
-          usuarioId={usuarioId}
-          onAsistenciaRegistrada={() => {
-            setAsistenciaRegistrada(true);
-            setRefresco((prev) => prev + 1);
-          }}
-        />
-      </div>
-    )}
-  </>
-)}
-
-
-
-
-
-
+                                                {!mostrarEscaner ? (
+                                                    <button
+                                                        className="btn btn-outline-primary"
+                                                        onClick={() => setMostrarEscaner(true)}
+                                                    >
+                                                        Activar escáner
+                                                    </button>
+                                                ) : (
+                                                    <EscanearQR
+                                                        usuarioId={usuarioId}
+                                                        deshabilitado={false}
+                                                        onAsistenciaRegistrada={() => {
+                                                            setAsistenciaRegistrada(true);
+                                                            setMostrarEscaner(false);
+                                                            setRefresco((prev) => prev + 1);
+                                                        }}
+                                                    />
+                                                )}
+                                                <SubirQR
+                                                    usuarioId={usuarioId}
+                                                    onAsistenciaRegistrada={() => {
+                                                        setAsistenciaRegistrada(true);
+                                                        setRefresco((prev) => prev + 1);
+                                                    }}
+                                                />
+                                            </div>
+                                        )}
+                                    </>
+                                )}
                                 {(tipoUsuario === 6 || tipoUsuario === 7) && evento?.id_estado === 4 && (
-  <div className="mt-4 p-3 bg-light border rounded-4 shadow-sm">
-    <h5 className="fw-bold mb-2">📲 QR para registrar asistencia</h5>
-    <GenerarQR eventoId={evento.id} usuarioId={usuarioId} />
-  </div>
-)}
+                                    <div className="mt-4 p-3 bg-light border rounded-4 shadow-sm">
+                                        <h5 className="fw-bold mb-2">📲 QR para registrar asistencia</h5>
+                                        <GenerarQR eventoId={evento.id} usuarioId={usuarioId}/>
+                                    </div>
+                                )}
 
                             </div>
                         )}
@@ -740,32 +733,32 @@ const DetalleEvento = () => {
                     </div>
 
                     <div className="col-md-5 d-flex align-items-start justify-content-center">
-                      <section className="border rounded p-4 w-100 bg-white shadow-sm">
-                        <div className="row row-cols-1 row-cols-sm-1 row-cols-md-2">
-                          <div className="col">
-                            <p className="text-center fw-semibold mb-2">Empieza el:</p>
-                            <div className="text-center fs-5 mb-4">
-                              {evento.fechainicio?.split('-').reverse().join('/')}
+                        <section className="border rounded p-4 w-100 bg-white shadow-sm">
+                            <div className="row row-cols-1 row-cols-sm-1 row-cols-md-2">
+                                <div className="col">
+                                    <p className="text-center fw-semibold mb-2">Empieza el:</p>
+                                    <div className="text-center fs-5 mb-4">
+                                        {evento.fechainicio?.split('-').reverse().join('/')}
+                                    </div>
+                                </div>
+                                <div className="col">
+                                    <p className="text-center fw-semibold mb-2">Termina el:</p>
+                                    <div className="text-center fs-5 mb-4">
+                                        {evento.fechafin?.split('-').reverse().join('/')}
+                                    </div>
+                                </div>
                             </div>
-                          </div>
-                          <div className="col">
-                            <p className="text-center fw-semibold mb-2">Termina el:</p>
-                            <div className="text-center fs-5 mb-4">
-                              {evento.fechafin?.split('-').reverse().join('/')}
+                            <div className="d-flex justify-content-center">
+                                {!inscripcionCargando && (
+                                    <button
+                                        className={`btn ${estaInscrito ? 'btn-secondary' : 'btn-primary'} px-4`}
+                                        onClick={manejarInscripcion}
+                                    >
+                                        {estaInscrito ? 'Cancelar inscripción' : 'Inscribirse'}
+                                    </button>
+                                )}
                             </div>
-                          </div>
-                        </div>
-                        <div className="d-flex justify-content-center">
-                          {!inscripcionCargando && (
-                            <button
-                              className={`btn ${estaInscrito ? 'btn-secondary' : 'btn-primary'} px-4`}
-                              onClick={manejarInscripcion}
-                            >
-                              {estaInscrito ? 'Cancelar inscripción' : 'Inscribirse'}
-                            </button>
-                          )}
-                        </div>
-                      </section>
+                        </section>
                     </div>
 
                 </div>
