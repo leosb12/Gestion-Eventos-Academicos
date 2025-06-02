@@ -7,12 +7,16 @@ import 'react-toastify/dist/ReactToastify.css'
 import HorarioCard from '../components/HorarioCard.jsx'
 import {UserAuth} from '../context/AuthContext.jsx'
 import MarcarAsistencia from '../components/MarcarAsistencia.jsx';
+import EscanearQR from '../components/EscanearQR';
+import SubirQR from '../components/SubirQR';
+import GenerarQR from '../components/GenerarQR';
 
 
 const DetalleEvento = () => {
     const {id} = useParams()
-    const {user} = UserAuth()
+    const { user, tipoUsuario } = UserAuth()
     const navigate = useNavigate()
+
 
     const [evento, setEvento] = useState(null)
     const [horarios, setHorarios] = useState([])
@@ -25,6 +29,9 @@ const DetalleEvento = () => {
     const [refresco, setRefresco] = useState(0);
     const [miEquipo, setMiEquipo] = useState(null);
     const [subiendoInforme, setSubiendoInforme] = useState(false);
+    const [asistenciaRegistrada, setAsistenciaRegistrada] = useState(null);
+    const [mostrarEscaner, setMostrarEscaner] = useState(false);
+    const [asistenciaVerificada, setAsistenciaVerificada] = useState(false);
 
 
     useEffect(() => {
@@ -294,6 +301,29 @@ const DetalleEvento = () => {
         }
         setInscripcionCargando(false);
     }
+    useEffect(() => {
+  const verificarAsistencia = async () => {
+    if (!evento || !usuarioId) return;
+
+    const { data: asistencia, error } = await supabase
+      .from('asistencia')
+      .select('*') // Usamos * porque no hay columna 'id'
+      .eq('id_evento', evento.id)
+      .eq('id_usuario', usuarioId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('❌ Error al verificar asistencia:', error);
+      return;
+    }
+
+    setAsistenciaRegistrada(!!asistencia); // true si existe, false si no
+    setAsistenciaVerificada(true); // marca que ya verificamos
+  };
+
+  verificarAsistencia();
+}, [evento, usuarioId, refresco]);
+
 
     const manejarInscripcion = async () => {
         if (!evento || !usuarioId) return;
@@ -608,9 +638,64 @@ const DetalleEvento = () => {
                         {estaInscrito && (
                             <div className="bg-white p-4 mt-4 mb-3 rounded-4 shadow-sm border d-inline-block">
                                 <h5 className="fw-bold mb-3">Registro de Asistencia</h5>
-                                <MarcarAsistencia evento={evento} usuarioId={usuarioId}/>
+                                {evento?.id_estado === 4 && (
+  <>
+    {!asistenciaVerificada ? (
+      <p className="text-muted">Verificando asistencia...</p>
+    ) : asistenciaRegistrada ? (
+      <div className="alert alert-success mt-4" role="alert">
+        ✅ Su asistencia ya ha sido registrada.
+      </div>
+    ) : (
+      <div className="mt-4">
+        <p className="fw-semibold">Registrar asistencia con QR:</p>
+
+        {!mostrarEscaner ? (
+          <button
+            className="btn btn-outline-primary"
+            onClick={() => setMostrarEscaner(true)}
+          >
+            Activar escáner
+          </button>
+        ) : (
+          <EscanearQR
+            usuarioId={usuarioId}
+            deshabilitado={false}
+            onAsistenciaRegistrada={() => {
+              setAsistenciaRegistrada(true);
+              setMostrarEscaner(false);
+              setRefresco((prev) => prev + 1);
+            }}
+          />
+        )}
+
+        <SubirQR
+          usuarioId={usuarioId}
+          onAsistenciaRegistrada={() => {
+            setAsistenciaRegistrada(true);
+            setRefresco((prev) => prev + 1);
+          }}
+        />
+      </div>
+    )}
+  </>
+)}
+
+
+
+
+
+
+                                {(tipoUsuario === 6 || tipoUsuario === 7) && evento?.id_estado === 4 && (
+  <div className="mt-4 p-3 bg-light border rounded-4 shadow-sm">
+    <h5 className="fw-bold mb-2">📲 QR para registrar asistencia</h5>
+    <GenerarQR eventoId={evento.id} usuarioId={usuarioId} />
+  </div>
+)}
+
                             </div>
                         )}
+
 
                         {miEquipo && (
                             <div className="bg-white p-4 mt-3 mb-3 rounded-4 shadow-sm border">
