@@ -1,2 +1,40 @@
-en utils, tienen supabaseclient: es la conexion con supabase, luego tienen userCache: se guarda en la cache la sesion
-en app, esta la pagina principal, las demas paginas se encuentran en /pages, estas pages usan los componentes que estan en /components, entre algunos esta PrivateRoute.jsx que uso en router.jsx, donde pueden añadir todos las direcciones de la pagina, osea que los redirija a notificct.vercel.app/iniciar-sesion por ejemplo, ahi ponen como se llamara ese path y luego el componente que este en /pages que se mostrara, por ultimo, cada que quieran hacer navigacion o redirigir a algo, se pueden guiar de la Navbar.jsx para copiarlo. Todas las imagenes que se usen subanlas a la carpeta public, y cuando pongan el url solo necesitan poner: /nombredelaimagen.jpg . Luego en main tenemos routerprovider, que les da todas las rutas que configuramos hace un rato, y esta encuelto en authcontextprovider, que es el que se encarga del inicio de sesion y del registro, asi como de cerrar sesion, igualmente recuerden que en cada componente pueden poner en pycharm rsc y les creara una plantilla y ahi dentro ponen antes del return() algunas funciones y dentro del return el html con css, y pueden hacer uso de las constantes y/o funciones declaradas y dentro de las <> pueden poner onSubmit ={lafuncion} o asi (esto es con el form, no se si da con otros compoentnes html). y rifa, ya vos lo que esta junto con html y css lo separas para que se vea mejor, y podes eliminar el assets, pero mejor guardalo porsi. Por ultimo dentro de supabase, estan los triggers, procesos almacenados y eso, denle una hojeada a todito, porque hay hartas cosas que se pueden hacer con supabase que ahorra tiempo. Y NO SE OLVIDEN, ANTES DE EMPEZAR, ABRAN SU PROYECTO, DENLE ARRIBA A DONDE DICE ACTUALIZAR PROYECTO(UPDATE PROJECT) , UNA VEZ HECHO ESO SE VAN A LA RAMA AHI ABAJITO EN PYCHARM Y LE DAN CLICK DERECHO A LA RAMA EN LA QUE ESTAN ACTUALMENTE(SE DA UNO CUENTA PORQUE TIENE EL SIMBOLITO DE UNA ETIQUETA Y SI PASAS EL CURSOR SOBRE ENCIMA TE LO ACLARA) Y CREAN UNA NUEVA RAMA, Y YA LUEGO DE AHI HACEN EN ESA RAMA LO QUE QUIERAN, PUSH Y COMMITS, SI HICIERON ALGUN COMMIT YA SEA LOCAL O NO(ES DECIR SIN PUSH AL GITHUB) O HAN HECHO ALGUN CAMBIO Y SE LES RAYO Y NO SABEN COMO RETROCEDER, SELECCIONAN ESOS CAMBIOS HECHOS, ES DECIR LOS ARCHIVOS AHI Y LE CLICKEAN AL BOTON QUE TIENE FORMA DE REVERTIR, Y LISTO. SUERTE CON EL PROYECTO, Y TAMBIEN ME DIJERON QUE LA INGENIERA LE GUSTARIA QUE SI NO UNO YA VA COMO 3 VECES CON CONTRASEÑA INCORRECTA, QUE LO BLOQUEE AL USUARIO, PUEDEN CREAR TABLA EN SUPABASE Y/O AÑADIRLE UNA COLUMNA A LA TABLA USUARIO PARA REGISTRAR ESO Y YA LUEGO EN EL FRONTEND MOSTRAR ESA NOTI, PUEDEN PROBAR A AUTOMATIZAR ESO EN SUPABASE, VEAN COMO, YY TAMBIEN CUANDO TERMINEN X COSITA QUE QUISIERON AÑADIR EN ESA RAMA, Y LA DEN A PUSH, Y LUEGO LE DEN A PULL REQUEST PARA HACER MERGE CON LA MAIN, YA PUEDEN IR ELIMINANDO ESAS SUBRAMAS, Y LUEGO EN SU MAIN LOCAL ACTUALIZAR PROYECTO, CREAR NUEVA SUBRAMA, Y AÑADIR OTRA FUNCION. AGREGUE UNA OPCION DE QUE CADA QUE QUEIRAN MODIFICAR LA RAMA MAIN, QUE SE TENGA QUE HACER UNA REVISION, DE OTRA PERSONA QUE NO SEA UNO, PARA QUE NO TROLEEN, PORQUE SI ESA MAIN TROLEA TODITOS IGUAL, Y ESOOO. SUERTE xd.
+# Sistema de Información para la Gestión de Eventos Académicos
+
+Este proyecto es una aplicación web desarrollada como parte de la materia **Sistemas de Información I** en la Facultad de Ciencias de la Computación y Telecomunicaciones (UAGRM). El objetivo es facilitar la planificación y gestión de eventos académicos, formativos, recreativos y extracurriculares dentro de la facultad.
+
+## 🧑‍💻 Sobre el proyecto
+
+El proyecto es un sistema real de gestión institucional, integrando múltiples áreas tecnológicas y roles del desarrollo de software. Como grupo, trabajamos de manera integral en todas las capas del sistema: desde el diseño de interfaces con React, hasta la lógica y la configuración de base de datos relacional con PostgreSQL, utilizando Supabase como plataforma backend.
+
+Cada integrante participó activamente en el desarrollo de funcionalidades frontend, backend y modelado de datos, cumpliendo con un enfoque de rotación de tareas que nos permitió adquirir experiencia práctica en el ciclo completo de desarrollo de software.
+
+El resultado es una aplicación web funcional y escalable, orientada a la planificación y administración de eventos académicos, formativos y extracurriculares dentro del contexto universitario.
+
+## 🚀 Tecnologías utilizadas
+
+- **Frontend**: [React](https://reactjs.org/) con [Vite](https://vitejs.dev/) para una experiencia de desarrollo rápida y moderna.
+- **Backend y Base de Datos**: [Supabase](https://supabase.com/), que proporciona:
+  - **PostgreSQL** como sistema de gestión de bases de datos relacional.
+  - **Supabase Auth** para la autenticación de usuarios.
+  - **Supabase Storage** para el manejo de archivos y recursos multimedia.
+- **Estilizado**: [Tailwind CSS](https://tailwindcss.com/) para un diseño responsivo y moderno.
+- **Despliegue**: [Vercel](https://vercel.com/) para el hosting y despliegue continuo de la aplicación.
+
+## 🧩 Estructura del proyecto
+
+- `/src`: Contiene el código fuente de la aplicación.
+  - `/components`: Componentes reutilizables de la interfaz de usuario.
+  - `/pages`: Páginas principales de la aplicación.
+  - `/utils`: Funciones y configuraciones auxiliares, incluyendo la conexión con Supabase.
+- `/public`: Archivos estáticos y recursos públicos.
+- `/supabase`: Configuraciones y scripts relacionados con Supabase.
+
+## 🔐 Autenticación y rutas protegidas
+
+La aplicación implementa un sistema de autenticación utilizando **Supabase Auth**. Se han definido rutas protegidas que requieren que el usuario esté autenticado para acceder a ciertas secciones de la aplicación. Esto se maneja mediante componentes como `PrivateRoute.jsx` y configuraciones en `router.jsx`.
+
+## 📦 Visualización del proyecto
+
+El proyecto está desplegado y disponible públicamente en el siguiente enlace:
+
+🔗 [Ver aplicación web](http://notificct.dpdns.org)
