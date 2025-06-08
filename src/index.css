@@ -1,12 +1,4 @@
 
-.carousel-inner {
-    max-height: 39rem;
-    min-height: 39rem;
-    object-fit: contain;
-    object-position: center;
-    background-color: rgba(30, 30, 47, 0.8)
-}
-
 /* Fuerza color blanco siempre en nav y evita fondo al hacer clic */
 .navbar .nav-link,
 .navbar .dropdown-item {
@@ -71,12 +63,67 @@
     background: url('/public/img/ficct.jpg') center/cover fixed no-repeat;
 }
 
-.carousel-inner {
-    max-height: 39rem;
-    min-height: 39rem;
-    object-fit: contain;
-    object-position: center;
-    background-color: rgba(30, 30, 47, 0.8);
+/* mantiene el fondo oscuro */
+#carouselExample,
+#carouselExample .carousel-inner {
+  background-color: rgba(30, 30, 47, 0.8);
+  overflow: hidden;
+}
+
+/* cada slide solo display block si active */
+#carouselExample .carousel-item {
+  display: none;
+}
+#carouselExample .carousel-item.active {
+  display: block;
+}
+
+/* imagen responsive sin deformar, altura fija */
+.carousel-img {
+  width: 100%;
+  height: 400px;
+  object-fit: cover;    /* cover para llenar siempre el contenedor; si prefieres no recortar usa 'contain' */
+  object-position: center;
+}
+
+/* estilos de leyenda sobre la imagen */
+.carousel-caption h5 {
+  background: rgba(0, 0, 0, 0.6);
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+}
+
+/* controles */
+.carousel-control-prev,
+.carousel-control-next {
+  width: 15%;
+  opacity: 0.5;
+  transition: opacity .15s ease;
+}
+.carousel-control-prev:hover,
+.carousel-control-next:hover {
+  opacity: 0.9;
+}
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+  filter: invert(1) brightness(2);
+}
+
+/* indicadores bajo */
+.carousel-indicators {
+  bottom: 10px;
+}
+.carousel-indicators button {
+  width: 30px;
+  height: 3px;
+  margin: 0 3px;
+  opacity: 0.5;
+  transition: opacity .6s ease;
+}
+.carousel-indicators .active {
+  background-color: #fff;
+  opacity: 1;
 }
 
 .custom-modal-overlay {
