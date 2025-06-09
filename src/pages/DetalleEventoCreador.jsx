@@ -21,6 +21,17 @@ const DetalleEventoCreador = () => {
     const [equipos, setEquipos] = useState([]);
     const [equipoExpandido, setEquipoExpandido] = useState(null);
     const [subSeccionesAbiertas, setSubSeccionesAbiertas] = useState({});
+    const [tribunales, setTribunales] = useState([]);
+    const [tribunalPorEquipo, setTribunalPorEquipo] = useState({});
+
+    useEffect(() => {
+        // carga todos los usuarios tipo tribunal (id_tipo_usuario = 3)
+       supabase
+         .from('usuario')
+         .select('id, nombre')
+         .eq('id_tipo_usuario', 3)
+         .then(({ data }) => setTribunales(data || []));
+    }, []);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -97,7 +108,7 @@ const DetalleEventoCreador = () => {
 
                     const {data: proyecto} = await supabase
                         .from('proyecto')
-                        .select('nombre, descripcion, url_informe')
+                        .select('id, nombre, descripcion, url_informe')
                         .eq('id_equipo', equipo.id)
                         .maybeSingle();
 
@@ -141,6 +152,32 @@ const DetalleEventoCreador = () => {
         cargarInscritosOEquipos();
     }, [evento]);
 
+    useEffect(() => {
+      if (!equipos.length) return;
+
+      const fetchTribunalesAsignados = async () => {
+        const { data: asignaciones, error } = await supabase
+          .from('tribunal')
+          .select('id_proyecto, id_usuario');
+
+        if (error) {
+          console.error('Error cargando asignaciones de tribunal:', error);
+          return;
+        }
+
+        // mapeo equipo.id → tribunalId
+        const mapping = {};
+        asignaciones.forEach(({ id_proyecto, id_usuario }) => {
+          // buscamos qué equipo tiene este proyecto
+          const equipo = equipos.find(e => e.proyecto?.id === id_proyecto);
+          if (equipo) mapping[equipo.id] = id_usuario;
+        });
+
+        setTribunalPorEquipo(mapping);
+      };
+
+      fetchTribunalesAsignados();
+    }, [equipos]);
     const eliminarEvento = async () => {
         const confirmar = window.confirm('¿Estás seguro de eliminar este evento?');
         if (!confirmar) return;
@@ -189,11 +226,29 @@ const DetalleEventoCreador = () => {
 
         if (error) {
             toast.error('Error al guardar cambios');
-        } else {
-            toast.success('Cambios guardados');
-            setEvento({...evento, ...form, imagen_url: nuevaURL});
-            setEditando(false);
         }
+
+      for (const [equipoId, tribunalId] of Object.entries(tribunalPorEquipo)) {
+        if (!tribunalId) continue;
+        const proyectoId = equipos.find(e => e.id === +equipoId).proyecto.id;
+        const { error: tribunalError } = await supabase
+          .from('tribunal')
+          .upsert(
+            { id_proyecto: proyectoId, id_usuario: tribunalId },
+            { onConflict: ['id_proyecto'] }
+          );
+        if (tribunalError) {
+          toast.error(`Error al asignar tribunal al grupo ${equipoId}`);
+          return;
+        }
+      }
+
+        toast.success('Cambios guardados');
+        setEvento({...evento, ...form, imagen_url: nuevaURL});
+        setEditando(false);
+
+
+
     };
 
     const cambiarEstado = async (nuevoEstado) => {
@@ -398,6 +453,59 @@ const DetalleEventoCreador = () => {
                                                             </div>
                                                         </div>
                                                     </div>
+                                                </div>
+                                                <div className="accordion my-2" id={`subAccordionTribunal${equipo.id}`}>
+                                                  <div className="accordion-item">
+                                                    <h2 className="accordion-header">
+                                                      <button
+                                                        className={`accordion-button collapsed bg-light fw-semibold`}
+                                                        type="button"
+                                                        onClick={() =>
+                                                          setSubSeccionesAbiertas(prev => ({
+                                                            ...prev,
+                                                            [equipo.id]: {
+                                                              ...(prev[equipo.id] || {}),
+                                                              tribunal: !prev[equipo.id]?.tribunal
+                                                            }
+                                                          }))
+                                                        }>
+                                                        👨‍⚖️ Tribunal
+                                                      </button>
+                                                    </h2>
+                                                    <div
+                                                      className={`accordion-collapse collapse ${subSeccionesAbiertas[equipo.id]?.tribunal ? 'show' : ''}`}>
+                                                      <div className="accordion-body">
+                                                        {editando ? (
+                                                          <>
+                                                            <label className="form-label">Asignar Tribunal:</label>
+                                                            <select
+                                                              className="form-select mb-3"
+                                                              value={tribunalPorEquipo[equipo.id] ?? ''}
+                                                              onChange={e =>
+                                                                setTribunalPorEquipo(prev => ({
+                                                                  ...prev,
+                                                                  [equipo.id]: +e.target.value
+                                                                }))
+                                                              }
+                                                            >
+                                                              <option value="">— No asignado —</option>
+                                                              {tribunales.map(t => (
+                                                                <option key={t.id} value={t.id}>
+                                                                  {t.nombre}
+                                                                </option>
+                                                              ))}
+                                                            </select>
+                                                          </>
+                                                        ) : (
+                                                          <p className="mb-0">
+                                                            {tribunalPorEquipo[equipo.id]
+                                                              ? tribunales.find(t => t.id === tribunalPorEquipo[equipo.id])?.nombre
+                                                              : '— No asignado —'}
+                                                          </p>
+                                                        )}
+                                                      </div>
+                                                    </div>
+                                                  </div>
                                                 </div>
                                             </div>
                                         </div>
