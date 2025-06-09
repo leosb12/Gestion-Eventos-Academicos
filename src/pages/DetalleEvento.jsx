@@ -33,7 +33,6 @@ const DetalleEvento = () => {
     const [mostrarEscaner, setMostrarEscaner] = useState(false);
     const [asistenciaVerificada, setAsistenciaVerificada] = useState(false);
 
-
     useEffect(() => {
         fetchEvento()
     }, [id])
@@ -95,76 +94,90 @@ const DetalleEvento = () => {
     };
 
     useEffect(() => {
-        console.log("🔍 Ejecutando efecto para obtener equipo");
+      console.log("🔍 Ejecutando efecto para obtener equipo");
 
-        const obtenerMiEquipo = async () => {
-            if (!evento || !usuarioId || !estaInscrito) {
-                console.log("⛔ Evento, usuarioId o inscripción aún no están listos");
-                return;
-            }
+      const obtenerMiEquipo = async () => {
+        if (!evento || !usuarioId || !estaInscrito) {
+          console.log("⛔ Evento, usuarioId o inscripción aún no están listos");
+          return;
+        }
+        const tipo = parseInt(evento.id_tevento);
+        if (tipo !== 2 && tipo !== 4) {
+          console.log("ℹ️ El evento no es Feria ni Hackathon");
+          return;
+        }
 
-            const tipo = parseInt(evento.id_tevento);
-            if (tipo !== 2 && tipo !== 4) {
-                console.log("ℹ️ El evento no es Feria ni Hackathon");
-                return;
-            }
+        // 1) Obtengo el id_equipo
+        const { data: miembro, error: errorMiembro } = await supabase
+          .from("miembrosequipo")
+          .select("id_equipo, equipo ( id_evento )")
+          .eq("id_usuario", usuarioId);
 
-            console.log("✅ Buscando equipo del usuario", usuarioId, "en evento", evento.id);
+        const miembroValido = miembro?.find(m => m.equipo?.id_evento === evento.id);
+        if (!miembroValido) {
+          setMiEquipo(null);
+          return;
+        }
+        const idEquipo = miembroValido.id_equipo;
 
-            const {data: miembro, error: errorMiembro} = await supabase
-                .from('miembrosequipo')
-                .select('id_equipo, equipo ( id_evento )')
-                .eq('id_usuario', usuarioId);
+        // 2) Traigo datos de equipo
+        const { data: equipo, error: errorEquipo } = await supabase
+          .from("equipo")
+          .select(`
+            id,
+            nombre,
+            nivelgrupo (
+              nivel:nivel!id (nombre)
+            ),
+            usuario:usuario!id_lider (nombre),
+            miembrosequipo (
+              id_usuario,
+              usuario:usuario (nombre)
+            )
+          `)
+          .eq("id", idEquipo)
+          .eq("id_evento", evento.id)
+          .maybeSingle();
 
-            const miembroValido = miembro?.find(m => m.equipo?.id_evento === evento.id);
+        // 3) Traigo datos de proyecto
+        const { data: proyecto, error: errorProyecto } = await supabase
+          .from("proyecto")
+          .select("id, url_informe")
+          .eq("id_equipo", idEquipo)
+          .maybeSingle();
 
-            if (!miembroValido) {
-                console.warn("❌ No se encontró equipo válido del usuario en este evento");
-                setMiEquipo(null);
-                return;
-            }
+        // 4) Si existe proyecto, compruebo si ya hay tribunal asignado
+        let tribunalNombre = null;
+        if (proyecto) {
+          const { data: asigTribunal } = await supabase
+            .from("tribunal")
+            .select("id_usuario")
+            .eq("id_proyecto", proyecto.id)
+            .maybeSingle();
 
-            const idEquipo = miembroValido.id_equipo;
+          if (asigTribunal?.id_usuario) {
+            const { data: usuarioTribunal } = await supabase
+              .from("usuario")
+              .select("nombre")
+              .eq("id", asigTribunal.id_usuario)
+              .maybeSingle();
+            tribunalNombre = usuarioTribunal?.nombre || null;
+          }
+        }
 
-            const {data: equipo, error: errorEquipo} = await supabase
-                .from('equipo')
-                .select(`
-                id, nombre,
-                nivelgrupo (
-                    nivel:nivel!id (nombre)
-                ),
-                usuario:usuario!id_lider (nombre),
-                miembrosequipo (
-                    id_usuario,
-                    usuario:usuario (nombre)
-                )
-            `)
-                .eq('id', idEquipo)
-                .eq('id_evento', evento.id)
-                .maybeSingle();
+        // 5) Actualizo miEquipo en un solo set
+        setMiEquipo({
+          ...equipo,
+          proyecto: proyecto || null,
+          tribunalNombre,
+        });
+      };
 
-            if (!errorEquipo && equipo) {
-                console.log("✅ Equipo obtenido:", equipo);
-                setMiEquipo(equipo);
-            } else {
-                console.warn("❌ No se encontró equipo en la tabla equipo");
-                setMiEquipo(null);
-            }
-
-            const {data: proyecto, error: errorProyecto} = await supabase
-                .from('proyecto')
-                .select('id, url_informe')
-                .eq('id_equipo', idEquipo)
-                .maybeSingle();
-
-            if (!errorProyecto && proyecto) {
-                setMiEquipo(prev => ({...prev, proyecto}));
-            }
-
-        };
-
+      if (evento && usuarioId && estaInscrito) {
         obtenerMiEquipo();
+      }
     }, [evento, usuarioId, estaInscrito]);
+
 
 
     useEffect(() => {
@@ -735,6 +748,10 @@ const DetalleEvento = () => {
                                         <li key={i}>{m.usuario?.nombre || `Usuario ${m.id_usuario}`}</li>
                                     ))}
                                 </ul>
+                                <p>
+                                  <strong>Tribunal asignado:</strong>{' '}
+                                  {miEquipo.tribunalNombre ?? '— Por designar —'}
+                                </p>
                                 {miEquipo?.proyecto?.url_informe ? (
                                     <div className="mt-3">
                                         <a
