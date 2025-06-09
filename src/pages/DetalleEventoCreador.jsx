@@ -23,6 +23,17 @@ const DetalleEventoCreador = () => {
     const [subSeccionesAbiertas, setSubSeccionesAbiertas] = useState({});
     const [tribunales, setTribunales] = useState([]);
     const [tribunalPorEquipo, setTribunalPorEquipo] = useState({});
+    const [mentores, setMentores] = useState([]);
+    const [mentorPorEquipo, setMentorPorEquipo] = useState({});
+
+    useEffect(() => {
+    // Cargar todos los usuarios tipo mentor (id_tipo_usuario = 8)
+        supabase
+          .from('usuario')
+          .select('id, nombre')
+          .eq('id_tipo_usuario', 8)
+          .then(({ data }) => setMentores(data || []));
+    }, []);
 
     useEffect(() => {
         // carga todos los usuarios tipo tribunal (id_tipo_usuario = 3)
@@ -72,6 +83,15 @@ const DetalleEventoCreador = () => {
 
         fetchData();
     }, [id, navigate]);
+
+    useEffect(() => {
+        // Cargar todos los usuarios tipo mentor (id_tipo_usuario = 8)
+        supabase
+          .from('usuario')
+          .select('id, nombre')
+          .eq('id_tipo_usuario', 8)
+          .then(({ data }) => setMentores(data || []));
+    }, []);
 
     useEffect(() => {
         if (!evento) return;
@@ -242,6 +262,18 @@ const DetalleEventoCreador = () => {
           return;
         }
       }
+        for (const [equipoId, mentorId] of Object.entries(mentorPorEquipo)) {
+            const { error: mentorError } = await supabase
+                .from('equipo')
+                .update({ mentor_id: mentorId })
+                .eq('id', equipoId);
+
+            if (mentorError) {
+                toast.error(`Error al asignar mentor al equipo ${equipoId}`);
+                return;
+            }
+        }
+
 
         toast.success('Cambios guardados');
         setEvento({...evento, ...form, imagen_url: nuevaURL});
@@ -500,6 +532,59 @@ const DetalleEventoCreador = () => {
                                                           <p className="mb-0">
                                                             {tribunalPorEquipo[equipo.id]
                                                               ? tribunales.find(t => t.id === tribunalPorEquipo[equipo.id])?.nombre
+                                                              : '— No asignado —'}
+                                                          </p>
+                                                        )}
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                                <div className="accordion my-2" id={`subAccordionMentor${equipo.id}`}>
+                                                  <div className="accordion-item">
+                                                    <h2 className="accordion-header">
+                                                      <button
+                                                        className={`accordion-button collapsed bg-light fw-semibold`}
+                                                        type="button"
+                                                        onClick={() =>
+                                                          setSubSeccionesAbiertas(prev => ({
+                                                            ...prev,
+                                                            [equipo.id]: {
+                                                              ...(prev[equipo.id] || {}),
+                                                              mentor: !prev[equipo.id]?.mentor
+                                                            }
+                                                          }))
+                                                        }>
+                                                        🧑‍🏫 Mentor
+                                                      </button>
+                                                    </h2>
+                                                    <div
+                                                      className={`accordion-collapse collapse ${subSeccionesAbiertas[equipo.id]?.mentor ? 'show' : ''}`}>
+                                                      <div className="accordion-body">
+                                                        {editando ? (
+                                                          <>
+                                                            <label className="form-label">Asignar Mentor:</label>
+                                                            <select
+                                                              className="form-select mb-3"
+                                                              value={mentorPorEquipo[equipo.id] ?? ''}
+                                                              onChange={e =>
+                                                                setMentorPorEquipo(prev => ({
+                                                                  ...prev,
+                                                                  [equipo.id]: e.target.value ? parseInt(e.target.value) : null
+                                                                }))
+                                                              }
+                                                            >
+                                                              <option value="">— No asignado —</option>
+                                                              {mentores.map(m => (
+                                                                <option key={m.id} value={m.id}>
+                                                                  {m.nombre}
+                                                                </option>
+                                                              ))}
+                                                            </select>
+                                                          </>
+                                                        ) : (
+                                                          <p className="mb-0">
+                                                            {mentorPorEquipo[equipo.id]
+                                                              ? mentores.find(m => m.id === mentorPorEquipo[equipo.id])?.nombre
                                                               : '— No asignado —'}
                                                           </p>
                                                         )}
