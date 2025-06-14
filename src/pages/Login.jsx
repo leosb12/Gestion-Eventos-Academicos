@@ -65,47 +65,43 @@ const Login = () => {
     }
   };
 
-  const handleResetPassword = async () => {
-  if (!registro) {
-    toast.error("Primero escribe tu número de registro");
-    return;
-  }
-
-  const registerToInteger = Number(registro);
-
-  if (isNaN(registerToInteger) || !Number.isInteger(registerToInteger) || registerToInteger < 0) {
-    toast.error("Registro inválido.");
-    return;
-  }
-
-  let email = getCorreoCache(registerToInteger);
-
-  if (!email) {
-    const { data, error } = await supabase
-      .from("usuario")
-      .select("correo")
-      .eq("id", registerToInteger)
-      .maybeSingle();
-
-    if (error || !data) {
-      toast.error("Registro no encontrado.");
+const handleResetPassword = async () => {
+    if (!registro) {
+      toast.error('Primero escribe tu número de registro');
       return;
     }
 
-    email = data.correo;
-    setCorreoCache(registerToInteger, email);
-  }
+    const registroInt = Number(registro);
+    if (isNaN(registroInt) || !Number.isInteger(registroInt) || registroInt < 0) {
+      toast.error('Registro inválido.');
+      return;
+    }
 
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: "https://notificct.vercel.app/update-password", // o tu dominio en producción
-  });
+    // Construir el fetch a tu función Edge
+    try {
+      setLoading(true);
+      const response = await fetch(
+        'https://sgpnyeashmuwwlpvxbgm.supabase.co/functions/v1/generar-link-recuperacion',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ registro: registroInt }),
+        }
+      );
 
-  if (error) {
-    toast.error("No se pudo enviar el correo: " + error.message);
-  } else {
-    toast.success("Te enviamos un correo para restablecer tu contraseña.");
-  }
-};
+      if (!response.ok) {
+        const texto = await response.text();
+        throw new Error(texto || 'Error desconocido');
+      }
+
+      toast.success('Te enviamos un correo para restablecer tu contraseña.');
+    } catch (err) {
+      console.error(err);
+      toast.error('Error al enviar correo: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
   return (
