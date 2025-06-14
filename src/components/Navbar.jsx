@@ -198,18 +198,54 @@ export default function Navbar() {
                                             </NavLink>
                                         </li>
                                         {(tipoUsuario === 6 || tipoUsuario === 7) && (
-                                            <li>
-                                                <NavLink
-                                                    to="/gestionar-eventos"
-                                                    className={({isActive}) =>
-                                                        `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
-                                                    }
-                                                >
-                                                    Gestionar Eventos
-                                                </NavLink>
-                                            </li>
-                                        )}
-                                    </>
+    <>
+        <li>
+            <NavLink
+                to="/gestionar-eventos"
+                className={({isActive}) =>
+                    `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                }
+            >
+                Gestionar Eventos
+            </NavLink>
+        </li>
+        <li>
+            <NavLink
+                to="/estadisticas"
+                className={({isActive}) =>
+                    `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                }
+            >
+                Estadísticas
+            </NavLink>
+        </li>
+    </>
+)}
+{(tipoUsuario === 6 || tipoUsuario === 7) && (
+    <>
+        <li>
+            <NavLink
+                to="/gestionar-eventos"
+                className={({isActive}) =>
+                    `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                }
+            >
+                Gestionar Eventos
+            </NavLink>
+        </li>
+        <li>
+            <NavLink
+                to="/Estadisticas"
+                className={({isActive}) =>
+                    `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                }
+            >
+                Estadísticas
+            </NavLink>
+        </li>
+    </>
+)}
+                             </>
                                 )}
                             </ul>
                         </li>
