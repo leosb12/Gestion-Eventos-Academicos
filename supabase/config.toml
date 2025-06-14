@@ -20,3 +20,14 @@ entrypoint = "./functions/eliminar-usuario/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/eliminar-usuario/*.html" ]
+
+[functions.generar-link-recuperacion]
+enabled = true
+verify_jwt = true
+import_map = "./functions/generar-link-recuperacion/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/generar-link-recuperacion/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/generar-link-recuperacion/*.html" ]
