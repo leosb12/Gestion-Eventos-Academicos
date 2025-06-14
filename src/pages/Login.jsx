@@ -66,42 +66,55 @@ const Login = () => {
   };
 
 const handleResetPassword = async () => {
-    if (!registro) {
-      toast.error('Primero escribe tu número de registro');
-      return;
-    }
+  if (!registro) {
+    toast.error("Primero escribe tu número de registro");
+    return;
+  }
 
-    const registroInt = Number(registro);
-    if (isNaN(registroInt) || !Number.isInteger(registroInt) || registroInt < 0) {
-      toast.error('Registro inválido.');
-      return;
-    }
+  const registroInt = Number(registro);
+  if (isNaN(registroInt) || !Number.isInteger(registroInt) || registroInt < 0) {
+    toast.error("Registro inválido.");
+    return;
+  }
 
-    // Construir el fetch a tu función Edge
-    try {
-      setLoading(true);
-      const response = await fetch(
-        'https://sgpnyeashmuwwlpvxbgm.supabase.co/functions/v1/generar-link-recuperacion',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ registro: registroInt }),
-        }
-      );
+  // Obtén la sesión del usuario para obtener el token
+  const { data: session } = await supabase.auth.getSession();
+  const accessToken = session?.access_token;
 
-      if (!response.ok) {
-        const texto = await response.text();
-        throw new Error(texto || 'Error desconocido');
+  if (!accessToken) {
+    toast.error("No se pudo obtener el token de autorización.");
+    return;
+  }
+
+  // Construir el fetch a tu función Edge
+  try {
+    setLoading(true);
+    const response = await fetch(
+      "https://sgpnyeashmuwwlpvxbgm.supabase.co/functions/v1/generar-link-recuperacion",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`, // Aquí añades el token
+        },
+        body: JSON.stringify({ registro: registroInt }),
       }
+    );
 
-      toast.success('Te enviamos un correo para restablecer tu contraseña.');
-    } catch (err) {
-      console.error(err);
-      toast.error('Error al enviar correo: ' + err.message);
-    } finally {
-      setLoading(false);
+    if (!response.ok) {
+      const texto = await response.text();
+      throw new Error(texto || "Error desconocido");
     }
-  };
+
+    toast.success("Te enviamos un correo para restablecer tu contraseña.");
+  } catch (err) {
+    console.error(err);
+    toast.error("Error al enviar correo: " + err.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
 
   return (
