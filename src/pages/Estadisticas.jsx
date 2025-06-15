@@ -22,7 +22,8 @@ const Estadisticas = () => {
     asistenciaPorcentaje: 0,
     numInscripciones: 0,
     tieneEquipos: false,
-    tieneProyectos: false
+    tieneProyectos: false,
+    tipoEvento: null
   });
 
   // Obtener eventos
@@ -67,168 +68,142 @@ const Estadisticas = () => {
       let numInscripciones = 0;
       let tieneEquipos = false;
       let tieneProyectos = false;
+      let tipoEvento = null;
 
-      // Si es "todos los eventos"
       if (eventoSeleccionado === 'todos') {
         const { data: eventosData, error } = await supabase
           .from('evento')
-          .select('id, id_tevento'); // Incluimos id_tevento para verificar el tipo de evento
+          .select('id, id_tevento');
 
-        if (error) {
-          toast.error('Error al obtener los eventos');
-          console.error(error);
-        } else {
-          // Obtener las inscripciones totales desde la tabla inscripcionevento
-          const { data: inscripcionesData } = await supabase
-            .from('inscripcionevento')
-            .select('id_usuario')
-            .in('id_evento', eventosData.map((evento) => evento.id));
+        if (error) throw error;
 
-          numInscripciones = inscripcionesData.length;
+        const ids = eventosData.map(e => e.id);
+        const tipos = eventosData.map(e => e.id_tevento);
 
-          // Obtener los equipos asociados a todos los eventos
-          const { data: equiposData } = await supabase
-            .from('equipo')
-            .select('id')
-            .in('id_evento', eventosData.map((evento) => evento.id));
+        const isGrupo = tipos.some(t => t === 2 || t === 4);
 
-          if (equiposData) {
-            numEquipos = equiposData.length;
-            tieneEquipos = numEquipos > 0;
-            setEstadisticas(prev => ({ ...prev, tieneEquipos }));
-          }
+        // Total inscripciones
+        const { data: inscripciones } = await supabase
+          .from('inscripcionevento')
+          .select('id_usuario')
+          .in('id_evento', ids);
+        numInscripciones = inscripciones?.length || 0;
 
-          // Obtener la asistencia de todos los eventos
-          const { data: asistenciaData } = await supabase
-            .from('asistencia')
-            .select('id_usuario')
-            .in('id_evento', eventosData.map((evento) => evento.id));
+        // Total asistencia
+        const { data: asistencias } = await supabase
+          .from('asistencia')
+          .select('id_usuario')
+          .in('id_evento', ids);
+        asistencia = asistencias?.length || 0;
 
-          if (asistenciaData) {
-            asistencia = asistenciaData.length;
-          }
+        // Equipos
+        const { data: equipos } = await supabase
+          .from('equipo')
+          .select('id')
+          .in('id_evento', ids);
+        numEquipos = equipos?.length || 0;
+        tieneEquipos = numEquipos > 0;
 
-          // Obtener los proyectos registrados
-          const { data: proyectosData } = await supabase
+        // Proyectos
+        const { data: proyectos } = await supabase
+          .from('proyecto')
+          .select('id')
+          .eq('id_estado', 4)
+          .in('id_evento', ids);
+        proyectosRegistrados = proyectos?.length || 0;
+        tieneProyectos = proyectosRegistrados > 0;
+
+        // Equipos completos
+        const { data: miembros } = await supabase
+          .from('miembrosequipo')
+          .select('id_equipo')
+          .in('id_evento', ids);
+
+        if (miembros) {
+          const conteo = {};
+          miembros.forEach(({ id_equipo }) => {
+            conteo[id_equipo] = (conteo[id_equipo] || 0) + 1;
+          });
+          equiposCompletos = Object.values(conteo).filter(n => n === 6).length;
+        }
+
+        asistenciaPorcentaje = numInscripciones > 0
+ ? parseFloat(((asistencia / numInscripciones) * 100).toFixed(2))
+  : 0;
+
+        tipoEvento = null; // importante para evitar filtrado por tipo individual
+
+      } else {
+        const { data: eventoData } = await supabase
+          .from('evento')
+          .select('id_tevento')
+          .eq('id', eventoSeleccionado)
+          .maybeSingle();
+
+        tipoEvento = eventoData?.id_tevento || null;
+
+        const { data: inscripciones } = await supabase
+          .from('inscripcionevento')
+          .select('id_usuario')
+          .eq('id_evento', eventoSeleccionado);
+        numInscripciones = inscripciones?.length || 0;
+
+        const { data: asistencias } = await supabase
+          .from('asistencia')
+          .select('id_usuario')
+          .eq('id_evento', eventoSeleccionado);
+        asistencia = asistencias?.length || 0;
+
+        if (tipoEvento === 2 || tipoEvento === 4) {
+          const { data: proyectos } = await supabase
             .from('proyecto')
             .select('id')
-            .eq('id_estado', 4); // Proyectos registrados (estado 4)
+            .eq('id_evento', eventoSeleccionado)
+            .eq('id_estado', 4);
+          proyectosRegistrados = proyectos?.length || 0;
+          tieneProyectos = proyectosRegistrados > 0;
 
-          if (proyectosData) {
-            proyectosRegistrados = proyectosData.length;
-            tieneProyectos = proyectosRegistrados > 0;
-            setEstadisticas(prev => ({ ...prev, tieneProyectos }));
-          }
-
-          // Obtener equipos completos
-          const { data: miembrosData } = await supabase
+          const { data: miembros } = await supabase
             .from('miembrosequipo')
-            .select('id_usuario, id_equipo')
-            .in('id_evento', eventosData.map((evento) => evento.id));
-
-          if (Array.isArray(miembrosData)) {
-            const equiposConMiembros = miembrosData.reduce((acc, miembro) => {
-              acc[miembro.id_equipo] = (acc[miembro.id_equipo] || 0) + 1;
-              return acc;
-            }, {});
-
-            equiposCompletos = Object.values(equiposConMiembros).filter(
-              (miembros) => miembros === 6
-            ).length;
-          } else {
-            equiposCompletos = 0;
-          }
-
-          // Calcular porcentaje de asistencia
-          asistenciaPorcentaje = numEquipos ? (asistencia / numEquipos) * 100 : 0;
-        }
-      } else {
-        // Para un evento específico
-        const { data: eventoData, error } = await supabase
-          .from('evento')
-          .select('id, id_tevento') // Seleccionamos id_tevento para verificar el tipo de evento
-          .eq('id', eventoSeleccionado);
-
-        if (eventoData && eventoData.length > 0) {
-          const evento = eventoData[0];
-          const id_tevento = evento.id_tevento; // Esto es lo que necesitamos para verificar el tipo de evento
-
-          // Obtener inscripciones
-          const { data: inscripcionesData } = await supabase
-            .from('inscripcionevento')
-            .select('id_usuario')
+            .select('id_equipo')
             .eq('id_evento', eventoSeleccionado);
 
-          if (inscripcionesData) {
-            numInscripciones = inscripcionesData.length;
+          if (miembros) {
+            const conteo = {};
+            miembros.forEach(({ id_equipo }) => {
+              conteo[id_equipo] = (conteo[id_equipo] || 0) + 1;
+            });
+            equiposCompletos = Object.values(conteo).filter(n => n === 6).length;
           }
 
-          // Si el evento es de tipo hackathon o feria, procesamos las estadísticas de equipos y proyectos
-          if (id_tevento === 4 || id_tevento === 2) {
-            // Obtener proyectos registrados solo para Hackathon y Feria
-            const { data: proyectosData } = await supabase
-              .from('proyecto')
-              .select('id')
-              .eq('id_evento', eventoSeleccionado)
-              .eq('id_estado', 4);
-
-            if (proyectosData) {
-              proyectosRegistrados = proyectosData.length;
-              setEstadisticas(prev => ({ ...prev, tieneProyectos: proyectosRegistrados > 0 }));
-            }
-
-            // Obtener equipos completos solo para Hackathon y Feria
-            const { data: miembrosData } = await supabase
-              .from('miembrosequipo')
-              .select('id_usuario, id_equipo')
-              .eq('id_evento', eventoSeleccionado);
-
-            if (Array.isArray(miembrosData)) {
-              const equiposCompletosData = miembrosData.reduce((acc, miembro) => {
-                acc[miembro.id_equipo] = (acc[miembro.id_equipo] || 0) + 1;
-                return acc;
-              }, {});
-
-              equiposCompletos = Object.values(equiposCompletosData).filter(
-                (miembros) => miembros === 6
-              ).length;
-            } else {
-              equiposCompletos = 0;
-            }
-          } else {
-            // Si el evento no es Hackathon ni Feria, no calculamos equipos y proyectos
-            equiposCompletos = 0;
-            proyectosRegistrados = 0;
-          }
-
-          // Obtener equipos registrados solo para Hackathon y Feria
-          const { data: equiposData } = await supabase
+          const { data: equipos } = await supabase
             .from('equipo')
             .select('id')
             .eq('id_evento', eventoSeleccionado);
-
-          if (equiposData) {
-            numEquipos = equiposData.length;
-            setEstadisticas(prev => ({ ...prev, tieneEquipos: numEquipos > 0 }));
-          }
-
-          // Calcular porcentaje de asistencia
-          asistenciaPorcentaje = numEquipos ? (asistencia / numEquipos) * 100 : 0;
+          numEquipos = equipos?.length || 0;
+          tieneEquipos = numEquipos > 0;
         }
+
+        asistenciaPorcentaje = numInscripciones > 0
+? parseFloat(((asistencia / numInscripciones) * 100).toFixed(2))
+  : 0;
+
       }
 
-      // Actualizar las estadísticas finales
       setEstadisticas({
-        numEquipos: numEquipos || 0,
-        asistencia: asistencia || 0,
-        equiposCompletos: equiposCompletos || 0,
-        proyectosRegistrados: proyectosRegistrados || 0,
-        asistenciaPorcentaje: asistenciaPorcentaje || 0,
-        numInscripciones: numInscripciones || 0,
+        numEquipos,
+        asistencia,
+        equiposCompletos,
+        proyectosRegistrados,
+        asistenciaPorcentaje,
+        numInscripciones,
+        tieneEquipos,
+        tieneProyectos,
+        tipoEvento,
       });
 
     } catch (error) {
-      toast.error('Ocurrió un error al cargar las estadísticas');
+      toast.error('Error cargando estadísticas');
       console.error(error);
     }
   };
@@ -269,46 +244,49 @@ const Estadisticas = () => {
             </Card>
           </Col>
 
-          {(eventoSeleccionado === 'todos' || eventoSeleccionado === 2 || eventoSeleccionado === 4) && (
-            <>
-              {estadisticas.tieneEquipos && (
-                <Col md={4} className="mb-4">
-                  <Card>
-                    <Card.Body>
-                      <Card.Title>Número de Equipos</Card.Title>
-                      <Card.Text>{estadisticas.numEquipos}</Card.Text>
-                    </Card.Body>
-                  </Card>
-                </Col>
-              )}
+            {(eventoSeleccionado === 'todos' || estadisticas.tipoEvento === 2 || estadisticas.tipoEvento === 4) && (
+  <>
+    {/* Equipos */}
+    {estadisticas.tieneEquipos && (
+      <Col md={4} className="mb-4">
+        <Card>
+          <Card.Body>
+            <Card.Title>Número de Equipos</Card.Title>
+            <Card.Text>{estadisticas.numEquipos}</Card.Text>
+          </Card.Body>
+        </Card>
+      </Col>
+    )}
 
-              {estadisticas.tieneEquipos && (
-                <Col md={4} className="mb-4">
-                  <Card>
-                    <Card.Body>
-                      <Card.Title>Equipos Completos</Card.Title>
-                      <Card.Text>{estadisticas.equiposCompletos} equipos completos</Card.Text>
-                      <ProgressBar
-                        now={(estadisticas.equiposCompletos / estadisticas.numEquipos) * 100}
-                        label={`${Math.round((estadisticas.equiposCompletos / estadisticas.numEquipos) * 100)}%`}
-                      />
-                    </Card.Body>
-                  </Card>
-                </Col>
-              )}
+    {/* Equipos Completos */}
+    {estadisticas.tieneEquipos && (
+      <Col md={4} className="mb-4">
+        <Card>
+          <Card.Body>
+            <Card.Title>Equipos Completos</Card.Title>
+            <Card.Text>{estadisticas.equiposCompletos} equipos completos</Card.Text>
+            <ProgressBar
+              now={(estadisticas.equiposCompletos / estadisticas.numEquipos) * 100}
+              label={`${Math.round((estadisticas.equiposCompletos / estadisticas.numEquipos) * 100)}%`}
+            />
+          </Card.Body>
+        </Card>
+      </Col>
+    )}
 
-              {estadisticas.tieneProyectos && (
-                <Col md={4} className="mb-4">
-                  <Card>
-                    <Card.Body>
-                      <Card.Title>Proyectos Registrados</Card.Title>
-                      <Card.Text>{estadisticas.proyectosRegistrados} proyectos</Card.Text>
-                    </Card.Body>
-                  </Card>
-                </Col>
-              )}
-            </>
-          )}
+    {/* Proyectos */}
+    {estadisticas.tieneProyectos && (
+      <Col md={4} className="mb-4">
+        <Card>
+          <Card.Body>
+            <Card.Title>Proyectos Registrados</Card.Title>
+            <Card.Text>{estadisticas.proyectosRegistrados} proyectos</Card.Text>
+          </Card.Body>
+        </Card>
+      </Col>
+    )}
+  </>
+)}
 
           <Col md={4} className="mb-4">
             <Card>
