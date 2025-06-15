@@ -33,82 +33,193 @@ const Estadisticas = () => {
 
   // 1) Cargar lista de eventos (filtrando por organizador si toca)
 useEffect(() => {
-    const fetchEventos = async () => {
-      try {
-        let q = supabase.from('evento').select('*');
+  const fetchEventos = async () => {
+    try {
+      let q = supabase.from('evento').select('*');
 
-        // Verificamos si el usuario es organizador (tipoUsuario 6)
-        if (tipoUsuario === 6) {
-          q = q.eq('id_usuario_creador', session.user.id); // Filtrar por el creador del evento
+      if (tipoUsuario === 6) {
+        const { data: usuario, error } = await supabase
+          .from('usuario')
+          .select('id')
+          .eq('correo', session.user.email)
+          .maybeSingle();
+
+        if (error || !usuario) {
+          toast.error('No se pudo obtener el ID del usuario autenticado');
+          return;
         }
 
-        // Ejecutar la consulta
-        const { data, error } = await q;
-
-        if (error) throw error;
-
-        if (data.length === 0) {
-          toast.warning('No hay eventos para mostrar');
-        }
-
-        setEventos(data || []);
-      } catch (e) {
-        console.error(e);
-        toast.error('Error al obtener los eventos');
+        q = q.eq('id_usuario_creador', usuario.id);
       }
-    };
 
-    fetchEventos();
-  }, [session.user.id, tipoUsuario]);
+      const { data, error } = await q;
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        toast.warning('No hay eventos para mostrar');
+      }
+
+      setEventos(data || []);
+    } catch (e) {
+      console.error(e);
+      toast.error('Error al obtener los eventos');
+    }
+  };
+
+  fetchEventos();
+}, [session.user.email, tipoUsuario]);
 
   // 2) Cargar todas las estadísticas cada vez que cambia eventoSeleccionado
-  useEffect(() => {
-    const fetchEstadisticas = async () => {
-      try {
-        // variables locales
-        let numEquipos = 0;
-        let asistencia = 0;
-        let equiposCompletos = 0;
-        let proyectosRegistrados = 0;
-        let numInscripciones = 0;
-        let tieneEquipos = false;
-        let tieneProyectos = false;
-        let asistenciaPorcentaje = 0;
-        let promedioMiembros = 0;
-        let tipoEvento = null;
+useEffect(() => {
+  const fetchEstadisticas = async () => {
+    try {
+      let idUsuarioNumerico = null;
 
-        if (eventoSeleccionado === 'todos') {
-          // --- TODOS LOS EVENTOS --- (para administradores)
-          let q = supabase.from('evento').select('id, id_tevento');
-          if (tipoUsuario === 6) q = q.eq('id_usuario_creador', session.user.id);
-          const { data: eventosData, error: errE } = await q;
-          if (errE) throw errE;
-          const idsEventos = (eventosData || []).map(e => e.id);
+      // Si es organizador, obtenemos su ID numérico desde la tabla usuario
+      if (tipoUsuario === 6) {
+  const { data: usuario, error } = await supabase
+    .from('usuario')
+    .select('id')
+    .eq('correo', session.user.email)
+    .maybeSingle();
 
-          // 2. Inscripciones
-          const { data: insc } = await supabase
-            .from('inscripcionevento')
-            .select('id_usuario')
-            .in('id_evento', idsEventos);
-          numInscripciones = insc?.length || 0;
+  if (error || !usuario) {
+    throw new Error('No se pudo obtener el ID del usuario autenticado');
+  }
 
-          // 3. Asistencias
-          const { data: asis } = await supabase
-            .from('asistencia')
-            .select('id_usuario')
-            .in('id_evento', idsEventos);
-          asistencia = asis?.length || 0;
+  idUsuarioNumerico = usuario.id;
+}
 
-          // 4. Equipos
+      let numEquipos = 0;
+      let asistencia = 0;
+      let equiposCompletos = 0;
+      let proyectosRegistrados = 0;
+      let numInscripciones = 0;
+      let tieneEquipos = false;
+      let tieneProyectos = false;
+      let asistenciaPorcentaje = 0;
+      let promedioMiembros = 0;
+      let tipoEvento = null;
+
+      if (eventoSeleccionado === 'todos') {
+  let q = supabase.from('evento').select('id, id_tevento');
+
+  // ✅ si es organizador, obtener su ID numérico por correo
+  if (tipoUsuario === 6) {
+    const { data: usuario, error } = await supabase
+      .from('usuario')
+      .select('id')
+      .eq('correo', session.user.email)
+      .maybeSingle();
+
+    if (error || !usuario) {
+      console.error(error);
+      toast.error('No se pudo obtener el ID del usuario autenticado');
+      return;
+    }
+
+    q = q.eq('id_usuario_creador', usuario.id);
+  }
+        const { data: eventosData, error: errE } = await q;
+        if (errE) throw errE;
+        const idsEventos = (eventosData || []).map(e => e.id);
+
+        if (idsEventos.length === 0) {
+          setEstadisticas({
+            numEquipos: 0,
+            asistencia: 0,
+            equiposCompletos: 0,
+            proyectosRegistrados: 0,
+            asistenciaPorcentaje: 0,
+            numInscripciones: 0,
+            promedioMiembros: 0,
+            tieneEquipos: false,
+            tieneProyectos: false,
+            tipoEvento: null
+          });
+          return;
+        }
+
+        const { data: insc } = await supabase
+          .from('inscripcionevento')
+          .select('id_usuario')
+          .in('id_evento', idsEventos);
+        numInscripciones = insc?.length || 0;
+
+        const { data: asis } = await supabase
+          .from('asistencia')
+          .select('id_usuario')
+          .in('id_evento', idsEventos);
+        asistencia = asis?.length || 0;
+
+        const { data: eq } = await supabase
+          .from('equipo')
+          .select('id')
+          .in('id_evento', idsEventos);
+        numEquipos = eq?.length || 0;
+        tieneEquipos = numEquipos > 0;
+
+        const idsEquipos = eq?.map(e => e.id) || [];
+        const { data: proj } = await supabase
+          .from('proyecto')
+          .select('id, url_informe')
+          .eq('id_estado', 4)
+          .in('id_equipo', idsEquipos);
+        proyectosRegistrados = proj?.filter(p => p.url_informe).length || 0;
+        tieneProyectos = proyectosRegistrados > 0;
+
+        const { data: md } = await supabase
+          .from('miembrosequipo')
+          .select('id_equipo')
+          .in('id_equipo', idsEquipos);
+        const miembrosData = md || [];
+        if (miembrosData.length) {
+          const counts = {};
+          miembrosData.forEach(({ id_equipo }) => {
+            counts[id_equipo] = (counts[id_equipo] || 0) + 1;
+          });
+          equiposCompletos = Object.values(counts).filter(c => c === 6).length;
+          promedioMiembros = parseFloat((miembrosData.length / numEquipos).toFixed(2));
+        }
+
+      } else {
+        const { data: ev } = await supabase
+          .from('evento')
+          .select('id_tevento, id_usuario_creador')
+          .eq('id', eventoSeleccionado)
+          .maybeSingle();
+
+        if (!ev) throw new Error('Evento no encontrado');
+
+        if (tipoUsuario === 6 && ev.id_usuario_creador !== idUsuarioNumerico) {
+          toast.error('No tienes permiso para ver este evento');
+          return;
+        }
+
+        tipoEvento = ev?.id_tevento || null;
+
+        const { data: insc } = await supabase
+          .from('inscripcionevento')
+          .select('id_usuario')
+          .eq('id_evento', eventoSeleccionado);
+        numInscripciones = insc?.length || 0;
+
+        const { data: asis } = await supabase
+          .from('asistencia')
+          .select('id_usuario')
+          .eq('id_evento', eventoSeleccionado);
+        asistencia = asis?.length || 0;
+
+        if (tipoEvento === 2 || tipoEvento === 4) {
           const { data: eq } = await supabase
             .from('equipo')
             .select('id')
-            .in('id_evento', idsEventos);
-          numEquipos = eq?.length || 0;
+            .eq('id_evento', eventoSeleccionado);
+          const idsEquipos = eq?.map(e => e.id) || [];
+          numEquipos = idsEquipos.length;
           tieneEquipos = numEquipos > 0;
 
-          // 5. Proyectos (solo si tienen informe)
-          const idsEquipos = eq?.map(e => e.id) || [];
           const { data: proj } = await supabase
             .from('proyecto')
             .select('id, url_informe')
@@ -117,13 +228,11 @@ useEffect(() => {
           proyectosRegistrados = proj?.filter(p => p.url_informe).length || 0;
           tieneProyectos = proyectosRegistrados > 0;
 
-          // 6. Miembros de equipo → equipos completos y promedio
-          let miembrosData = [];
           const { data: md } = await supabase
             .from('miembrosequipo')
             .select('id_equipo')
             .in('id_equipo', idsEquipos);
-          miembrosData = md || [];
+          const miembrosData = md || [];
           if (miembrosData.length) {
             const counts = {};
             miembrosData.forEach(({ id_equipo }) => {
@@ -132,101 +241,38 @@ useEffect(() => {
             equiposCompletos = Object.values(counts).filter(c => c === 6).length;
             promedioMiembros = parseFloat((miembrosData.length / numEquipos).toFixed(2));
           }
-
-        } else {
-          // --- EVENTO INDIVIDUAL --- (para eventos seleccionados)
-          const { data: ev } = await supabase
-            .from('evento')
-            .select('id_tevento')
-            .eq('id', eventoSeleccionado)
-            .maybeSingle();
-          tipoEvento = ev?.id_tevento || null;
-
-          // Inscripciones
-          const { data: insc } = await supabase
-            .from('inscripcionevento')
-            .select('id_usuario')
-            .eq('id_evento', eventoSeleccionado);
-          numInscripciones = insc?.length || 0;
-
-          // Asistencias
-          const { data: asis } = await supabase
-            .from('asistencia')
-            .select('id_usuario')
-            .eq('id_evento', eventoSeleccionado);
-          asistencia = asis?.length || 0;
-
-          // Si es hackathon (4) o feria (2), calculamos equipos, proyectos y miembros...
-          if (tipoEvento === 2 || tipoEvento === 4) {
-            // Equipos
-            const { data: eq } = await supabase
-              .from('equipo')
-              .select('id')
-              .eq('id_evento', eventoSeleccionado);
-            const idsEquipos = eq?.map(e => e.id) || [];
-            numEquipos = idsEquipos.length;
-            tieneEquipos = numEquipos > 0;
-
-            // Proyectos (con informe)
-            const { data: proj } = await supabase
-              .from('proyecto')
-              .select('id, url_informe')
-              .eq('id_estado', 4)
-              .in('id_equipo', idsEquipos);
-            proyectosRegistrados = proj?.filter(p => p.url_informe).length || 0;
-            tieneProyectos = proyectosRegistrados > 0;
-
-            // Miembros
-            let miembrosData = [];
-            const { data: md } = await supabase
-              .from('miembrosequipo')
-              .select('id_equipo')
-              .in('id_equipo', idsEquipos);
-            miembrosData = md || [];
-            if (miembrosData.length) {
-              const counts = {};
-              miembrosData.forEach(({ id_equipo }) => {
-                counts[id_equipo] = (counts[id_equipo] || 0) + 1;
-              });
-              equiposCompletos = Object.values(counts).filter(c => c === 6).length;
-              promedioMiembros = parseFloat((miembrosData.length / numEquipos).toFixed(2));
-            }
-          }
         }
-
-        // porcentaje general
-        asistenciaPorcentaje = numInscripciones
-          ? parseFloat(((asistencia / numInscripciones) * 100).toFixed(2))
-          : 0;
-
-        // Asegurar que la estadística de proyectos se muestre para ferias y hackatones, incluso cuando sea 0
-        if (tipoEvento === 2 || tipoEvento === 4) {
-          tieneProyectos = true;  // Asegura que se muestre la estadística de proyectos
-          proyectosRegistrados = proyectosRegistrados || 0; // Si no hay proyectos, asigna 0
-        }
-
-        // actualizar estado
-        setEstadisticas({
-          numEquipos,
-          asistencia,
-          equiposCompletos,
-          proyectosRegistrados,
-          asistenciaPorcentaje,
-          numInscripciones,
-          promedioMiembros,
-          tieneEquipos,
-          tieneProyectos,
-          tipoEvento
-        });
-
-      } catch (err) {
-        console.error(err);
-        toast.error('Error cargando estadísticas');
       }
-    };
 
-    fetchEstadisticas();
-  }, [eventoSeleccionado, session.user.id, tipoUsuario]);
+      asistenciaPorcentaje = numInscripciones
+        ? parseFloat(((asistencia / numInscripciones) * 100).toFixed(2))
+        : 0;
+
+      if (tipoEvento === 2 || tipoEvento === 4 || eventoSeleccionado === 'todos') {
+        tieneProyectos = true;
+        proyectosRegistrados = proyectosRegistrados || 0;
+      }
+
+      setEstadisticas({
+        numEquipos,
+        asistencia,
+        equiposCompletos,
+        proyectosRegistrados,
+        asistenciaPorcentaje,
+        numInscripciones,
+        promedioMiembros,
+        tieneEquipos,
+        tieneProyectos,
+        tipoEvento
+      });
+    } catch (err) {
+      console.error(err);
+      toast.error('Error cargando estadísticas');
+    }
+  };
+
+  fetchEstadisticas();
+}, [eventoSeleccionado, session.user.id, tipoUsuario]);
 
   // Datos para los gráficos de pastel
   const asistenciaData = {
@@ -255,7 +301,7 @@ const equiposCompletosData = {
     <>
       <Navbar />
       <div className="container">
-        <h1 className="my-4">Estadísticas del Evento</h1>
+        <h1 className="my-4">Estadísticas de Evento</h1>
 
         <Form.Group className="mb-4">
           <Form.Label>Seleccionar Evento</Form.Label>
