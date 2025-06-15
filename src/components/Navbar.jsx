@@ -197,36 +197,12 @@ export default function Navbar() {
                                                 Crear Evento
                                             </NavLink>
                                         </li>
-                                        {(tipoUsuario === 6 || tipoUsuario === 7) && (
+                                     {(tipoUsuario === 6 || tipoUsuario === 7) && (
     <>
         <li>
             <NavLink
                 to="/gestionar-eventos"
-                className={({isActive}) =>
-                    `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
-                }
-            >
-                Gestionar Eventos
-            </NavLink>
-        </li>
-        <li>
-            <NavLink
-                to="/estadisticas"
-                className={({isActive}) =>
-                    `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
-                }
-            >
-                Estadísticas
-            </NavLink>
-        </li>
-    </>
-)}
-{(tipoUsuario === 6 || tipoUsuario === 7) && (
-    <>
-        <li>
-            <NavLink
-                to="/gestionar-eventos"
-                className={({isActive}) =>
+                className={({ isActive }) =>
                     `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
                 }
             >
@@ -236,7 +212,7 @@ export default function Navbar() {
         <li>
             <NavLink
                 to="/Estadisticas"
-                className={({isActive}) =>
+                className={({ isActive }) =>
                     `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
                 }
             >
@@ -245,6 +221,7 @@ export default function Navbar() {
         </li>
     </>
 )}
+
                              </>
                                 )}
                             </ul>
