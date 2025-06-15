@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import supabase from '../utils/supabaseClient';
 import Navbar from '../components/Navbar';
 import { toast } from 'react-toastify';
@@ -7,10 +7,14 @@ import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer } from 'react-toastify';
 import { Card, Row, Col, ProgressBar, Form } from 'react-bootstrap';
 import { UserAuth } from '../context/AuthContext.jsx';
+import { Pie } from 'react-chartjs-2';
+import { Chart as ChartJS, Title, Tooltip, Legend, ArcElement, CategoryScale } from 'chart.js';
+
+// Registro de los componentes necesarios de Chart.js
+ChartJS.register(Title, Tooltip, Legend, ArcElement, CategoryScale);
 
 const Estadisticas = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { session, tipoUsuario } = UserAuth();
   const [eventos, setEventos] = useState([]);
   const [eventoSeleccionado, setEventoSeleccionado] = useState(id || 'todos');
@@ -21,200 +25,231 @@ const Estadisticas = () => {
     proyectosRegistrados: 0,
     asistenciaPorcentaje: 0,
     numInscripciones: 0,
+    promedioMiembros: 0,
     tieneEquipos: false,
     tieneProyectos: false,
     tipoEvento: null
   });
 
-  // Obtener eventos
-  useEffect(() => {
+  // 1) Cargar lista de eventos (filtrando por organizador si toca)
+useEffect(() => {
     const fetchEventos = async () => {
       try {
-        let query = supabase.from('evento').select('*');
-        if (tipoUsuario === 6) { // Organizador, solo sus eventos
-          query = query.eq('id_usuario_creador', session.user.id);
+        let q = supabase.from('evento').select('*');
+
+        // Verificamos si el usuario es organizador (tipoUsuario 6)
+        if (tipoUsuario === 6) {
+          q = q.eq('id_usuario_creador', session.user.id); // Filtrar por el creador del evento
         }
 
-        const { data, error } = await query;
+        // Ejecutar la consulta
+        const { data, error } = await q;
 
-        if (error) {
-          toast.error('Error al obtener los eventos');
-          console.error(error);
-        } else {
-          setEventos(data || []); // Asegúrate de que sea un array
-          console.log('Eventos:', data); // Imprimir eventos para verificar
-          if (data.length === 0) {
-            toast.warning('No hay eventos para mostrar');
-          }
+        if (error) throw error;
+
+        if (data.length === 0) {
+          toast.warning('No hay eventos para mostrar');
         }
-      } catch (error) {
-        toast.error('Ocurrió un error al cargar los eventos');
-        console.error(error);
+
+        setEventos(data || []);
+      } catch (e) {
+        console.error(e);
+        toast.error('Error al obtener los eventos');
       }
     };
 
     fetchEventos();
-  }, [tipoUsuario, session.user.id]);
+  }, [session.user.id, tipoUsuario]);
 
-  // Obtener estadísticas
+  // 2) Cargar todas las estadísticas cada vez que cambia eventoSeleccionado
   useEffect(() => {
-  const fetchEstadisticas = async () => {
-    try {
-      let numEquipos = 0;
-      let asistencia = 0;
-      let equiposCompletos = 0;
-      let proyectosRegistrados = 0;
-      let asistenciaPorcentaje = 0;
-      let numInscripciones = 0;
-      let tieneEquipos = false;
-      let tieneProyectos = false;
-      let tipoEvento = null;
+    const fetchEstadisticas = async () => {
+      try {
+        // variables locales
+        let numEquipos = 0;
+        let asistencia = 0;
+        let equiposCompletos = 0;
+        let proyectosRegistrados = 0;
+        let numInscripciones = 0;
+        let tieneEquipos = false;
+        let tieneProyectos = false;
+        let asistenciaPorcentaje = 0;
+        let promedioMiembros = 0;
+        let tipoEvento = null;
 
-      if (eventoSeleccionado === 'todos') {
-        const { data: eventosData, error } = await supabase
-          .from('evento')
-          .select('id, id_tevento');
+        if (eventoSeleccionado === 'todos') {
+          // --- TODOS LOS EVENTOS --- (para administradores)
+          let q = supabase.from('evento').select('id, id_tevento');
+          if (tipoUsuario === 6) q = q.eq('id_usuario_creador', session.user.id);
+          const { data: eventosData, error: errE } = await q;
+          if (errE) throw errE;
+          const idsEventos = (eventosData || []).map(e => e.id);
 
-        if (error) throw error;
+          // 2. Inscripciones
+          const { data: insc } = await supabase
+            .from('inscripcionevento')
+            .select('id_usuario')
+            .in('id_evento', idsEventos);
+          numInscripciones = insc?.length || 0;
 
-        const ids = eventosData.map(e => e.id);
-        const tipos = eventosData.map(e => e.id_tevento);
+          // 3. Asistencias
+          const { data: asis } = await supabase
+            .from('asistencia')
+            .select('id_usuario')
+            .in('id_evento', idsEventos);
+          asistencia = asis?.length || 0;
 
-        const isGrupo = tipos.some(t => t === 2 || t === 4);
-
-        // Total inscripciones
-        const { data: inscripciones } = await supabase
-          .from('inscripcionevento')
-          .select('id_usuario')
-          .in('id_evento', ids);
-        numInscripciones = inscripciones?.length || 0;
-
-        // Total asistencia
-        const { data: asistencias } = await supabase
-          .from('asistencia')
-          .select('id_usuario')
-          .in('id_evento', ids);
-        asistencia = asistencias?.length || 0;
-
-        // Equipos
-        const { data: equipos } = await supabase
-          .from('equipo')
-          .select('id')
-          .in('id_evento', ids);
-        numEquipos = equipos?.length || 0;
-        tieneEquipos = numEquipos > 0;
-
-        // Proyectos
-        const { data: proyectos } = await supabase
-          .from('proyecto')
-          .select('id')
-          .eq('id_estado', 4)
-          .in('id_evento', ids);
-        proyectosRegistrados = proyectos?.length || 0;
-        tieneProyectos = proyectosRegistrados > 0;
-
-        // Equipos completos
-        const { data: miembros } = await supabase
-          .from('miembrosequipo')
-          .select('id_equipo')
-          .in('id_evento', ids);
-
-        if (miembros) {
-          const conteo = {};
-          miembros.forEach(({ id_equipo }) => {
-            conteo[id_equipo] = (conteo[id_equipo] || 0) + 1;
-          });
-          equiposCompletos = Object.values(conteo).filter(n => n === 6).length;
-        }
-
-        asistenciaPorcentaje = numInscripciones > 0
- ? parseFloat(((asistencia / numInscripciones) * 100).toFixed(2))
-  : 0;
-
-        tipoEvento = null; // importante para evitar filtrado por tipo individual
-
-      } else {
-        const { data: eventoData } = await supabase
-          .from('evento')
-          .select('id_tevento')
-          .eq('id', eventoSeleccionado)
-          .maybeSingle();
-
-        tipoEvento = eventoData?.id_tevento || null;
-
-        const { data: inscripciones } = await supabase
-          .from('inscripcionevento')
-          .select('id_usuario')
-          .eq('id_evento', eventoSeleccionado);
-        numInscripciones = inscripciones?.length || 0;
-
-        const { data: asistencias } = await supabase
-          .from('asistencia')
-          .select('id_usuario')
-          .eq('id_evento', eventoSeleccionado);
-        asistencia = asistencias?.length || 0;
-
-        if (tipoEvento === 2 || tipoEvento === 4) {
-          const { data: proyectos } = await supabase
-            .from('proyecto')
-            .select('id')
-            .eq('id_evento', eventoSeleccionado)
-            .eq('id_estado', 4);
-          proyectosRegistrados = proyectos?.length || 0;
-          tieneProyectos = proyectosRegistrados > 0;
-
-          const { data: miembros } = await supabase
-            .from('miembrosequipo')
-            .select('id_equipo')
-            .eq('id_evento', eventoSeleccionado);
-
-          if (miembros) {
-            const conteo = {};
-            miembros.forEach(({ id_equipo }) => {
-              conteo[id_equipo] = (conteo[id_equipo] || 0) + 1;
-            });
-            equiposCompletos = Object.values(conteo).filter(n => n === 6).length;
-          }
-
-          const { data: equipos } = await supabase
+          // 4. Equipos
+          const { data: eq } = await supabase
             .from('equipo')
             .select('id')
-            .eq('id_evento', eventoSeleccionado);
-          numEquipos = equipos?.length || 0;
+            .in('id_evento', idsEventos);
+          numEquipos = eq?.length || 0;
           tieneEquipos = numEquipos > 0;
+
+          // 5. Proyectos (solo si tienen informe)
+          const idsEquipos = eq?.map(e => e.id) || [];
+          const { data: proj } = await supabase
+            .from('proyecto')
+            .select('id, url_informe')
+            .eq('id_estado', 4)
+            .in('id_equipo', idsEquipos);
+          proyectosRegistrados = proj?.filter(p => p.url_informe).length || 0;
+          tieneProyectos = proyectosRegistrados > 0;
+
+          // 6. Miembros de equipo → equipos completos y promedio
+          let miembrosData = [];
+          const { data: md } = await supabase
+            .from('miembrosequipo')
+            .select('id_equipo')
+            .in('id_equipo', idsEquipos);
+          miembrosData = md || [];
+          if (miembrosData.length) {
+            const counts = {};
+            miembrosData.forEach(({ id_equipo }) => {
+              counts[id_equipo] = (counts[id_equipo] || 0) + 1;
+            });
+            equiposCompletos = Object.values(counts).filter(c => c === 6).length;
+            promedioMiembros = parseFloat((miembrosData.length / numEquipos).toFixed(2));
+          }
+
+        } else {
+          // --- EVENTO INDIVIDUAL --- (para eventos seleccionados)
+          const { data: ev } = await supabase
+            .from('evento')
+            .select('id_tevento')
+            .eq('id', eventoSeleccionado)
+            .maybeSingle();
+          tipoEvento = ev?.id_tevento || null;
+
+          // Inscripciones
+          const { data: insc } = await supabase
+            .from('inscripcionevento')
+            .select('id_usuario')
+            .eq('id_evento', eventoSeleccionado);
+          numInscripciones = insc?.length || 0;
+
+          // Asistencias
+          const { data: asis } = await supabase
+            .from('asistencia')
+            .select('id_usuario')
+            .eq('id_evento', eventoSeleccionado);
+          asistencia = asis?.length || 0;
+
+          // Si es hackathon (4) o feria (2), calculamos equipos, proyectos y miembros...
+          if (tipoEvento === 2 || tipoEvento === 4) {
+            // Equipos
+            const { data: eq } = await supabase
+              .from('equipo')
+              .select('id')
+              .eq('id_evento', eventoSeleccionado);
+            const idsEquipos = eq?.map(e => e.id) || [];
+            numEquipos = idsEquipos.length;
+            tieneEquipos = numEquipos > 0;
+
+            // Proyectos (con informe)
+            const { data: proj } = await supabase
+              .from('proyecto')
+              .select('id, url_informe')
+              .eq('id_estado', 4)
+              .in('id_equipo', idsEquipos);
+            proyectosRegistrados = proj?.filter(p => p.url_informe).length || 0;
+            tieneProyectos = proyectosRegistrados > 0;
+
+            // Miembros
+            let miembrosData = [];
+            const { data: md } = await supabase
+              .from('miembrosequipo')
+              .select('id_equipo')
+              .in('id_equipo', idsEquipos);
+            miembrosData = md || [];
+            if (miembrosData.length) {
+              const counts = {};
+              miembrosData.forEach(({ id_equipo }) => {
+                counts[id_equipo] = (counts[id_equipo] || 0) + 1;
+              });
+              equiposCompletos = Object.values(counts).filter(c => c === 6).length;
+              promedioMiembros = parseFloat((miembrosData.length / numEquipos).toFixed(2));
+            }
+          }
         }
 
-        asistenciaPorcentaje = numInscripciones > 0
-? parseFloat(((asistencia / numInscripciones) * 100).toFixed(2))
-  : 0;
+        // porcentaje general
+        asistenciaPorcentaje = numInscripciones
+          ? parseFloat(((asistencia / numInscripciones) * 100).toFixed(2))
+          : 0;
 
+        // Asegurar que la estadística de proyectos se muestre para ferias y hackatones, incluso cuando sea 0
+        if (tipoEvento === 2 || tipoEvento === 4) {
+          tieneProyectos = true;  // Asegura que se muestre la estadística de proyectos
+          proyectosRegistrados = proyectosRegistrados || 0; // Si no hay proyectos, asigna 0
+        }
+
+        // actualizar estado
+        setEstadisticas({
+          numEquipos,
+          asistencia,
+          equiposCompletos,
+          proyectosRegistrados,
+          asistenciaPorcentaje,
+          numInscripciones,
+          promedioMiembros,
+          tieneEquipos,
+          tieneProyectos,
+          tipoEvento
+        });
+
+      } catch (err) {
+        console.error(err);
+        toast.error('Error cargando estadísticas');
       }
+    };
 
-      setEstadisticas({
-        numEquipos,
-        asistencia,
-        equiposCompletos,
-        proyectosRegistrados,
-        asistenciaPorcentaje,
-        numInscripciones,
-        tieneEquipos,
-        tieneProyectos,
-        tipoEvento,
-      });
+    fetchEstadisticas();
+  }, [eventoSeleccionado, session.user.id, tipoUsuario]);
 
-    } catch (error) {
-      toast.error('Error cargando estadísticas');
-      console.error(error);
-    }
+  // Datos para los gráficos de pastel
+  const asistenciaData = {
+    labels: ['Asistencia', 'No Asistencia'],
+    datasets: [{
+      data: [estadisticas.asistenciaPorcentaje, 100 - estadisticas.asistenciaPorcentaje],
+      backgroundColor: ['#36A2EB', '#FF6384'],
+    }],
   };
 
-  fetchEstadisticas();
-}, [eventoSeleccionado]);
+  const completos = estadisticas.equiposCompletos;
+  const incompletos = estadisticas.numEquipos - estadisticas.equiposCompletos;
 
-  // Función para manejar el cambio de evento seleccionado
-  const handleChangeEvento = (e) => {
-    setEventoSeleccionado(e.target.value);
-  };
+const equiposCompletosData = {
+  labels: ['Completos', 'Incompletos'],
+  datasets: [{
+    data: (completos === 0 && incompletos === 0)
+      ? [0, 1] // Evita que el gráfico se rompa: muestra todo como incompletos
+      : [completos, incompletos],
+    backgroundColor: ['#4BC0C0', '#FF6384'],
+  }],
+};
+
 
   return (
     <>
@@ -224,18 +259,21 @@ const Estadisticas = () => {
 
         <Form.Group className="mb-4">
           <Form.Label>Seleccionar Evento</Form.Label>
-          <Form.Control as="select" value={eventoSeleccionado} onChange={handleChangeEvento}>
+          <Form.Control
+            as="select"
+            value={eventoSeleccionado}
+            onChange={e => setEventoSeleccionado(e.target.value)}
+          >
             <option value="todos">Todos los eventos</option>
-            {eventos.map((evento) => (
-              <option key={evento.id} value={evento.id}>
-                {evento.nombre}
-              </option>
+            {eventos.map(ev => (
+              <option key={ev.id} value={ev.id}>{ev.nombre}</option>
             ))}
           </Form.Control>
         </Form.Group>
 
-        <Row>
-          <Col md={4} className="mb-4">
+        <Row className="justify-content-center">
+          {/* Total Inscripciones y Asistencia Total */}
+          <Col md={6} className="mb-4">
             <Card>
               <Card.Body>
                 <Card.Title>Total Inscripciones</Card.Title>
@@ -244,51 +282,7 @@ const Estadisticas = () => {
             </Card>
           </Col>
 
-            {(eventoSeleccionado === 'todos' || estadisticas.tipoEvento === 2 || estadisticas.tipoEvento === 4) && (
-  <>
-    {/* Equipos */}
-    {estadisticas.tieneEquipos && (
-      <Col md={4} className="mb-4">
-        <Card>
-          <Card.Body>
-            <Card.Title>Número de Equipos</Card.Title>
-            <Card.Text>{estadisticas.numEquipos}</Card.Text>
-          </Card.Body>
-        </Card>
-      </Col>
-    )}
-
-    {/* Equipos Completos */}
-    {estadisticas.tieneEquipos && (
-      <Col md={4} className="mb-4">
-        <Card>
-          <Card.Body>
-            <Card.Title>Equipos Completos</Card.Title>
-            <Card.Text>{estadisticas.equiposCompletos} equipos completos</Card.Text>
-            <ProgressBar
-              now={(estadisticas.equiposCompletos / estadisticas.numEquipos) * 100}
-              label={`${Math.round((estadisticas.equiposCompletos / estadisticas.numEquipos) * 100)}%`}
-            />
-          </Card.Body>
-        </Card>
-      </Col>
-    )}
-
-    {/* Proyectos */}
-    {estadisticas.tieneProyectos && (
-      <Col md={4} className="mb-4">
-        <Card>
-          <Card.Body>
-            <Card.Title>Proyectos Registrados</Card.Title>
-            <Card.Text>{estadisticas.proyectosRegistrados} proyectos</Card.Text>
-          </Card.Body>
-        </Card>
-      </Col>
-    )}
-  </>
-)}
-
-          <Col md={4} className="mb-4">
+          <Col md={6} className="mb-4">
             <Card>
               <Card.Body>
                 <Card.Title>Asistencia Total</Card.Title>
@@ -297,7 +291,8 @@ const Estadisticas = () => {
             </Card>
           </Col>
 
-          <Col md={4} className="mb-4">
+          {/* Gráficos de Asistencia */}
+          <Col md={6} className="mb-4">
             <Card>
               <Card.Body>
                 <Card.Title>Porcentaje de Asistencia</Card.Title>
@@ -306,9 +301,72 @@ const Estadisticas = () => {
                   now={estadisticas.asistenciaPorcentaje}
                   label={`${estadisticas.asistenciaPorcentaje}%`}
                 />
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <Pie data={asistenciaData} />
+                </div>
               </Card.Body>
             </Card>
           </Col>
+
+          {/* Equipos Completos y Total Equipos */}
+          {(estadisticas.tipoEvento === 2 || estadisticas.tipoEvento === 4 || eventoSeleccionado === 'todos') && (
+  <>
+    <Col md={6} className="mb-4">
+      <Card>
+        <Card.Body>
+          <Card.Title>Equipos Completos</Card.Title>
+          <Card.Text>{estadisticas.equiposCompletos} equipos completos</Card.Text>
+          <ProgressBar
+            now={
+              estadisticas.numEquipos > 0
+                ? (estadisticas.equiposCompletos / estadisticas.numEquipos) * 100
+                : 0
+            }
+            label={
+              estadisticas.numEquipos > 0
+                ? `${Math.round((estadisticas.equiposCompletos / estadisticas.numEquipos) * 100)}%`
+                : '0%'
+            }
+          />
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <Pie data={equiposCompletosData} />
+          </div>
+        </Card.Body>
+      </Card>
+    </Col>
+
+    <Col md={6} className="mb-4">
+      <Card>
+        <Card.Body>
+          <Card.Title>Total Equipos</Card.Title>
+          <Card.Text>{estadisticas.numEquipos} equipos</Card.Text>
+        </Card.Body>
+      </Card>
+    </Col>
+  </>
+)}
+         {/* Promedio de Integrantes por Equipo */}
+          {(estadisticas.tipoEvento === 2 || estadisticas.tipoEvento === 4 || eventoSeleccionado === 'todos') && (
+            <Col md={6} className="mb-4">
+              <Card>
+                <Card.Body>
+                  <Card.Title>Promedio de Integrantes por Equipo</Card.Title>
+                  <Card.Text>{estadisticas.promedioMiembros} integrantes</Card.Text>
+                </Card.Body>
+              </Card>
+            </Col>
+          )}
+          {/* Proyectos Registrados */}
+          {estadisticas.tieneProyectos && (
+            <Col md={6} className="mb-4">
+              <Card>
+                <Card.Body>
+                  <Card.Title>Proyectos Registrados</Card.Title>
+                  <Card.Text>{estadisticas.proyectosRegistrados || 0} proyectos</Card.Text>
+                </Card.Body>
+              </Card>
+            </Col>
+          )}
         </Row>
 
         <ToastContainer />
