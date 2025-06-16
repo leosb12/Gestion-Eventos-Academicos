@@ -1,58 +1,39 @@
+import React, {useEffect, useState} from 'react';
+import supabase from '../utils/supabaseClient.js';
+import EventCard from './EventCard.jsx';
+import {toast} from 'react-toastify';
 
+const Events = ({filtros}) => {
+    const [events, setEvents] = useState([]);
 
-const Events = () => {
-    const events = [
-          {
-            title: "Taller robótica y manejo empresarial 1-2025",
-            image: "/kiko.jpg",
-            link: "#"
-          },
-          {
-            title: "Taller robótica y manejo empresarial 1-2025",
-            image: "/kiko.jpg",
-            link: "#"
-          },
-          {
-            title: "Taller robótica y manejo empresarial 1-2025",
-            image: "/kiko.jpg",
-            link: "#"
-          },
-          {
-            title: "Taller robótica y manejo empresarial 1-2025",
-            image: "/kiko.jpg",
-            link: "#"
-          },
-          {
-            title: "Taller robótica y manejo empresarial 1-2025",
-            image: "/kiko.jpg",
-            link: "#"
-          },
-          {
-            title: "Taller robótica y manejo empresarial 1-2025",
-            image: "/kiko.jpg",
-            link: "#"
-          }
-    ];
+    useEffect(() => {
+        const fetchEventos = async () => {
+            let query = supabase.from('evento').select('id, nombre, descripcion, imagen_url, fechainicio, fechafin, id_estado');
+
+            if (filtros.categoria) query = query.eq('id_tevento', filtros.categoria);
+            if (filtros.ubicacion) query = query.eq('id_ubicacion', filtros.ubicacion);
+            if (filtros.fechaInicio) query = query.gte('fechainicio', filtros.fechaInicio);
+            if (filtros.fechaFin) query = query.lte('fechafin', filtros.fechaFin);
+
+            const {data, error} = await query;
+
+            if (!error) {
+                setEvents(data);
+            } else {
+                toast.error('Error al cargar los eventos');
+            }
+        };
+
+        fetchEventos();
+    }, [filtros]); // ✅ se actualiza cuando cambia algún filtro
 
     return (
-        <section>
-          <div className="container">
-            <div className="row row-cols-1 row-cols-lg-3 g-4 mb-5">
-              {events.map((event, index) => (
-                <div className="col" key={index}>
-                  <div className="card h-100 bg-white p-5 rounded-5 border-light border-4 shadow-sm">
-                    <img className="card-img-top mb-2" src={event.image} alt={event.title} />
-                    <div className="card-body d-flex flex-column">
-                      <h2 className="card-title text-center mb-4 fs-3 fw-bold fs-md-4">{event.title}</h2>
-                      <div className="mt-auto text-center">
-                        <a href={event.link} className="btn btn-primary px-5 py-3 fw-bold">Inscribirse</a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+        <section className="container my-5">
+            <div className="row row-cols-1 row-cols-md-3 g-4">
+                {events.map(evt => (
+                    <EventCard key={evt.id} evento={evt}/>
+                ))}
             </div>
-          </div>
         </section>
     );
 };

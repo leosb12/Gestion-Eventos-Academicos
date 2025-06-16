@@ -1,165 +1,173 @@
-import Wrapper from "../components/Wrapper.jsx";
-import Navbar from "../components/Navbar.jsx";
-import AuthBackground from "../components/AuthBackground.jsx";
-import {Link, useNavigate} from "react-router-dom";
-import {useState} from "react";
-import {UserAuth} from "../context/AuthContext.jsx";
-import {toast, ToastContainer} from "react-toastify";
-import 'react-toastify/dist/ReactToastify.css';
-import supabase from "../utils/supabaseClient.js";
-import {getCorreoCache, setCorreoCache} from "../utils/cacheUser.js";
+  // src/pages/Login.jsx
 
-const Login = () => {
-  const [register, setRegister] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+  import React, { useState } from 'react';
+  import { Link, useNavigate } from 'react-router-dom';
+  import Navbar from '../components/Navbar.jsx';
+  import AuthBackground from '../components/AuthBackground.jsx';
+  import Wrapper from '../components/Wrapper.jsx';
+  import { UserAuth } from '../context/AuthContext.jsx';
+  import supabase from '../utils/supabaseClient.js';
+  import { getCorreoCache, setCorreoCache } from '../utils/cacheUser.js';
+  import { toast, ToastContainer } from 'react-toastify';
+  import 'react-toastify/dist/ReactToastify.css';
 
-  const {session, signInUser} = UserAuth();
-  const navigate = useNavigate();
+  const Login = () => {
+    const [registro, setRegistro] = useState('');
+    const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
 
-  const handleSignIn = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try{
-      if (!register || !password) {
-        toast.error("Por favor, rellena todos los campos.");
+    const { signInUser } = UserAuth();
+    const navigate = useNavigate();
+
+    const handleSignIn = async (e) => {
+      e.preventDefault();
+      setLoading(true);
+
+      // Validaciones
+      if (!registro || !password) {
+        toast.error('Por favor, rellena todos los campos.');
+        setLoading(false);
         return;
       }
-      const registerToInteger= Number(register);
-
-      if (isNaN(registerToInteger) || !Number.isInteger(registerToInteger) || registerToInteger < 0) {
-        toast.error("Por favor, ingresa un número de registro válido.");
+      const registroInt = Number(registro);
+      if (isNaN(registroInt) || !Number.isInteger(registroInt) || registroInt < 0) {
+        toast.error('Por favor, ingresa un número de registro válido.');
+        setLoading(false);
         return;
       }
 
-      let email = getCorreoCache(registerToInteger);
-
+      // Obtener email desde caché o DB
+      let email = getCorreoCache(registroInt);
       if (!email) {
-          const { data, error } = await supabase
-            .from('usuario')
-            .select('correo')
-            .eq('id', registerToInteger)
-            .maybeSingle();
-
-          if (error || !data) {
-              toast.error("Registro no encontrado");
-              return {success: false, error: error}
-          }
-
-          email = data.correo;
-          setCorreoCache(registerToInteger, email);
+        const { data, error } = await supabase
+          .from('usuario')
+          .select('correo')
+          .eq('id', registroInt)
+          .maybeSingle();
+        if (error || !data) {
+          toast.error('Registro no encontrado.');
+          setLoading(false);
+          return;
+        }
+        email = data.correo;
+        setCorreoCache(registroInt, email);
       }
 
+      // Intento de login
       const result = await signInUser(email, password);
+      setLoading(false);
 
       if (result.success) {
-          navigate("/dashboard");
+        // Redirige al home ("/") en vez de dashboard
+        navigate('/');
+      } else {
+        // signInUser ya muestra toast de error
       }
-    } catch (error) {
-      toast.error("Ha ocurrido un error" + error.message)
+    };
+
+  const handleResetPassword = async () => {
+    if (!registro) {
+      toast.error("Primero escribe tu número de registro");
+      return;
+    }
+
+    const registroInt = Number(registro);
+    if (isNaN(registroInt) || !Number.isInteger(registroInt) || registroInt < 0) {
+      toast.error("Registro inválido.");
+      return;
+    }
+
+    // Construir el fetch a tu función Edge
+    try {
+      setLoading(true);
+      const response = await fetch(
+        "https://sgpnyeashmuwwlpvxbgm.supabase.co/functions/v1/generar-link-recuperacion",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            'apikey': import.meta.env.VITE_SUPABASE_KEY,
+            "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_KEY}`, // Aquí añades el token
+          },
+          body: JSON.stringify({ registro: registroInt }),
+        }
+      );
+
+      if (!response.ok) {
+        const texto = await response.text();
+        throw new Error(texto || "Error desconocido");
+      }
+
+      toast.success("Te enviamos un correo para restablecer tu contraseña.");
+    } catch (err) {
+      console.error(err);
+      toast.error("Error al enviar correo: " + err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleResetPassword = async () => {
-  if (!register) {
-    toast.error("Primero escribe tu número de registro");
-    return;
-  }
-
-  const registerToInteger = Number(register);
-
-  if (isNaN(registerToInteger) || !Number.isInteger(registerToInteger) || registerToInteger < 0) {
-    toast.error("Registro inválido.");
-    return;
-  }
-
-  let email = getCorreoCache(registerToInteger);
-
-  if (!email) {
-    const { data, error } = await supabase
-      .from("usuario")
-      .select("correo")
-      .eq("id", registerToInteger)
-      .maybeSingle();
-
-    if (error || !data) {
-      toast.error("Registro no encontrado.");
-      return;
-    }
-
-    email = data.correo;
-    setCorreoCache(registerToInteger, email);
-  }
-
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: "https://notificct.vercel.app/update-password", // o tu dominio en producción
-  });
-
-  if (error) {
-    toast.error("No se pudo enviar el correo: " + error.message);
-  } else {
-    toast.success("Te enviamos un correo para restablecer tu contraseña.");
-  }
-};
 
 
-  return (
-  <>
-    <Navbar/>
-    <AuthBackground>
-        <Wrapper title="INICIA SESIÓN">
-          <form onSubmit={handleSignIn}>
-            <div className="mb-3">
-              <label className="form-label fs-5 fw-semibold">Registro:</label>
-              <input
-                  onChange={(e) => setRegister(e.target.value)}
-                  className="form-control form-control-lg"
+    return (
+      <>
+        <Navbar />
+        <AuthBackground>
+          <Wrapper title="INICIA SESIÓN">
+            <form onSubmit={handleSignIn}>
+              <div className="mb-3">
+                <label className="form-label fs-5 fw-semibold">Registro:</label>
+                <input
                   type="text"
-                  placeholder="Ingrese su registro"
-              />
-            </div>
-            <div className="mb-3">
-              <label className="form-label fs-5 fw-semibold">Contraseña: </label>
-              <input
-                  onChange={(e) => setPassword(e.target.value)}
                   className="form-control form-control-lg"
+                  value={registro}
+                  onChange={(e) => setRegistro(e.target.value)}
+                  placeholder="Ingrese su registro"
+                />
+              </div>
+              <div className="mb-3">
+                <label className="form-label fs-5 fw-semibold">Contraseña:</label>
+                <input
                   type="password"
+                  className="form-control form-control-lg"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="Ingrese su contraseña"
-              />
-            </div>
+                />
+              </div>
 
-            <div className="mb-3 text-end">
-              <button
-                  type="button"
-                    onClick={handleResetPassword}
-                  className="btn btn-link text-decoration-none text-primary fs-6"
-                    >
-                   ¿Olvidaste tu contraseña?
+              <div className="mb-3 text-end">
+                <button
+                    type="button"
+                      onClick={handleResetPassword}
+                    className="btn btn-link text-decoration-none text-primary fs-6"
+                      >
+                     ¿Olvidaste tu contraseña?
+                  </button>
+                  </div>
+
+
+              <div className="d-grid mb-3">
+                <button
+                  type="submit"
+                  className="btn btn-primary py-2 fs-5"
+                  disabled={loading}
+                >
+                  {loading ? 'Cargando...' : 'Iniciar Sesión'}
                 </button>
-                </div>
+              </div>
+              <div className="text-center">
+                <span className="d-block mb-1">¿No tienes cuenta?</span>
+                <Link to="/registro" className="fs-5 text-decoration-none fw-semibold">
+                  Regístrate
+                </Link>
+              </div>
+            </form>
+          </Wrapper>
+        </AuthBackground>
+        <ToastContainer position="top-right" closeButton={false} hideProgressBar autoClose={3000} />
+      </>
+    );
+  };
 
-
-            <div className="d-grid mb-3">
-              <button disabled={loading} className="btn btn-primary py-2 fs-5" type="submit">
-                Iniciar Sesión
-              </button>
-            </div>
-            <div className="text-center">
-              <span className="d-block mb-1">¿No tienes cuenta?</span>
-              <Link className="fs-5 text-decoration-none fw-semibold" href="#" to={"/registro"}>
-                Registrate
-              </Link>
-              {error && <p className="text-red-600 text-center pt-4">{error.message}</p>}
-            </div>
-          </form>
-        </Wrapper>
-    </AuthBackground>
-    <ToastContainer position="top-right" closeButton={false} hideProgressBar={true} limit={1} autoClose={3000}/>
-  </>
-  );
-};
-
-export default Login;
+  export default Login;
