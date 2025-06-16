@@ -56,6 +56,11 @@ const DetalleEvento = () => {
             return;
         }
 
+        if (!miEquipo?.proyecto?.id) {
+            toast.error('Error: el proyecto aún no ha sido creado.');
+            return;
+        }
+
         setSubiendoInforme(true);
 
         try {
@@ -84,7 +89,10 @@ const DetalleEvento = () => {
             toast.success('Informe subido correctamente.');
             setMiEquipo(prev => ({
                 ...prev,
-                proyecto: {...prev.proyecto, url_informe: urlData.publicUrl}
+                proyecto: {
+                    ...(prev.proyecto || {}),
+                    url_informe: urlData.publicUrl
+                }
             }));
         } catch (err) {
             console.error(err);
@@ -94,37 +102,38 @@ const DetalleEvento = () => {
         }
     };
 
+
     useEffect(() => {
-      console.log("🔍 Ejecutando efecto para obtener equipo");
+        console.log("🔍 Ejecutando efecto para obtener equipo");
 
-      const obtenerMiEquipo = async () => {
-        if (!evento || !usuarioId || !estaInscrito) {
-          console.log("⛔ Evento, usuarioId o inscripción aún no están listos");
-          return;
-        }
-        const tipo = parseInt(evento.id_tevento);
-        if (tipo !== 2 && tipo !== 4) {
-          console.log("ℹ️ El evento no es Feria ni Hackathon");
-          return;
-        }
+        const obtenerMiEquipo = async () => {
+            if (!evento || !usuarioId || !estaInscrito) {
+                console.log("⛔ Evento, usuarioId o inscripción aún no están listos");
+                return;
+            }
+            const tipo = parseInt(evento.id_tevento);
+            if (tipo !== 2 && tipo !== 4) {
+                console.log("ℹ️ El evento no es Feria ni Hackathon");
+                return;
+            }
 
-        // 1) Obtengo el id_equipo
-        const { data: miembro, error: errorMiembro } = await supabase
-          .from("miembrosequipo")
-          .select("id_equipo, equipo ( id_evento )")
-          .eq("id_usuario", usuarioId);
+            // 1) Obtengo el id_equipo
+            const {data: miembro, error: errorMiembro} = await supabase
+                .from("miembrosequipo")
+                .select("id_equipo, equipo ( id_evento )")
+                .eq("id_usuario", usuarioId);
 
-        const miembroValido = miembro?.find(m => m.equipo?.id_evento === evento.id);
-        if (!miembroValido) {
-          setMiEquipo(null);
-          return;
-        }
-        const idEquipo = miembroValido.id_equipo;
+            const miembroValido = miembro?.find(m => m.equipo?.id_evento === evento.id);
+            if (!miembroValido) {
+                setMiEquipo(null);
+                return;
+            }
+            const idEquipo = miembroValido.id_equipo;
 
-        // 2) Traigo datos de equipo
-        const { data: equipo, error: errorEquipo } = await supabase
-          .from("equipo")
-          .select(`
+            // 2) Traigo datos de equipo
+            const {data: equipo, error: errorEquipo} = await supabase
+                .from("equipo")
+                .select(`
             id,
             nombre,
             nivelgrupo (
@@ -136,61 +145,60 @@ const DetalleEvento = () => {
               usuario:usuario (nombre)
             )
           `)
-          .eq("id", idEquipo)
-          .eq("id_evento", evento.id)
-          .maybeSingle();
+                .eq("id", idEquipo)
+                .eq("id_evento", evento.id)
+                .maybeSingle();
 
-        // 3) Traigo datos de proyecto
-        const { data: proyecto, error: errorProyecto } = await supabase
-          .from("proyecto")
-          .select("id, url_informe")
-          .eq("id_equipo", idEquipo)
-          .maybeSingle();
+            // 3) Traigo datos de proyecto
+            const {data: proyecto, error: errorProyecto} = await supabase
+                .from("proyecto")
+                .select("id, url_informe")
+                .eq("id_equipo", idEquipo)
+                .maybeSingle();
 
-        // 4) Si existe proyecto, compruebo si ya hay tribunal asignado
-        let tribunalNombre = null;
-        if (proyecto) {
-          const { data: asigTribunal } = await supabase
-            .from("tribunal")
-            .select("id_usuario")
-            .eq("id_proyecto", proyecto.id)
-            .maybeSingle();
+            // 4) Si existe proyecto, compruebo si ya hay tribunal asignado
+            let tribunalNombre = null;
+            if (proyecto) {
+                const {data: asigTribunal} = await supabase
+                    .from("tribunal")
+                    .select("id_usuario")
+                    .eq("id_proyecto", proyecto.id)
+                    .maybeSingle();
 
-          if (asigTribunal?.id_usuario) {
-            const { data: usuarioTribunal } = await supabase
-              .from("usuario")
-              .select("nombre")
-              .eq("id", asigTribunal.id_usuario)
-              .maybeSingle();
-            tribunalNombre = usuarioTribunal?.nombre || null;
-          }
+                if (asigTribunal?.id_usuario) {
+                    const {data: usuarioTribunal} = await supabase
+                        .from("usuario")
+                        .select("nombre")
+                        .eq("id", asigTribunal.id_usuario)
+                        .maybeSingle();
+                    tribunalNombre = usuarioTribunal?.nombre || null;
+                }
+            }
+            let nombreMentor = null;
+            if (equipo && equipo.id) {
+                const {data: equipoConMentor} = await supabase
+                    .from("equipo")
+                    .select("mentor_id, mentor:usuario!mentor_id(nombre)")
+                    .eq("id", equipo.id)
+                    .maybeSingle();
+
+                if (equipoConMentor?.mentor) {
+                    nombreMentor = equipoConMentor.mentor.nombre;
+                }
+            }
+            // 5) Actualizo miEquipo en un solo set
+            setMiEquipo({
+                ...equipo,
+                proyecto: proyecto || null,
+                tribunalNombre,
+            });
+            setMentorNombre(nombreMentor);
+        };
+
+        if (evento && usuarioId && estaInscrito) {
+            obtenerMiEquipo();
         }
-        let nombreMentor = null;
-        if (equipo && equipo.id) {
-          const { data: equipoConMentor } = await supabase
-            .from("equipo")
-            .select("mentor_id, mentor:usuario!mentor_id(nombre)")
-            .eq("id", equipo.id)
-            .maybeSingle();
-
-          if (equipoConMentor?.mentor) {
-            nombreMentor = equipoConMentor.mentor.nombre;
-          }
-        }
-        // 5) Actualizo miEquipo en un solo set
-        setMiEquipo({
-          ...equipo,
-          proyecto: proyecto || null,
-          tribunalNombre,
-        });
-        setMentorNombre(nombreMentor);
-      };
-
-      if (evento && usuarioId && estaInscrito) {
-        obtenerMiEquipo();
-      }
     }, [evento, usuarioId, estaInscrito]);
-
 
 
     useEffect(() => {
@@ -203,94 +211,94 @@ const DetalleEvento = () => {
     }, [evento, estaInscrito])
 
     useEffect(() => {
-      if (!usuarioId || !evento) return;
-      console.log("🔔 Configurando listener real-time de inscripciones");
+        if (!usuarioId || !evento) return;
+        console.log("🔔 Configurando listener real-time de inscripciones");
 
-      const channel = supabase
-        .channel('inscripciones-en-evento')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'inscripcionevento',
-            // ¡filtro por evento, no por usuario!
-            filter: `id_evento=eq.${evento.id}`
-          },
-          async (payload) => {
-            console.log("🔔 Insert inscripcionevento:", payload);
-            const insc = payload.new;
-
-            // obtén el token una sola vez al subscribirte (o aquí mismo)
-            const { data: {session} } = await supabase.auth.getSession();
-            const token = session?.access_token;
-            console.log('>>> token:', token);
-
-            const sendMail = (to, subject, html) =>
-              fetch('https://sgpnyeashmuwwlpvxbgm.supabase.co/functions/v1/enviar-correo', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${token}`
+        const channel = supabase
+            .channel('inscripciones-en-evento')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'INSERT',
+                    schema: 'public',
+                    table: 'inscripcionevento',
+                    // ¡filtro por evento, no por usuario!
+                    filter: `id_evento=eq.${evento.id}`
                 },
-                body: JSON.stringify({ to, subject, html })
-              });
+                async (payload) => {
+                    console.log("🔔 Insert inscripcionevento:", payload);
+                    const insc = payload.new;
 
-            // ¿insert pertenece a un equipo?
-            const { data: miembro } = await supabase
-              .from('miembrosequipo')
-              .select('id_equipo')
-              .eq('id_usuario', insc.id_usuario)
-              .maybeSingle();
+                    // obtén el token una sola vez al subscribirte (o aquí mismo)
+                    const {data: {session}} = await supabase.auth.getSession();
+                    const token = session?.access_token;
+                    console.log('>>> token:', token);
 
-            if (miembro?.id_equipo) {
-              // flujo grupal
-              const { data: equipo } = await supabase
-                .from('equipo')
-                .select(`
+                    const sendMail = (to, subject, html) =>
+                        fetch('https://sgpnyeashmuwwlpvxbgm.supabase.co/functions/v1/enviar-correo', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${token}`
+                            },
+                            body: JSON.stringify({to, subject, html})
+                        });
+
+                    // ¿insert pertenece a un equipo?
+                    const {data: miembro} = await supabase
+                        .from('miembrosequipo')
+                        .select('id_equipo')
+                        .eq('id_usuario', insc.id_usuario)
+                        .maybeSingle();
+
+                    if (miembro?.id_equipo) {
+                        // flujo grupal
+                        const {data: equipo} = await supabase
+                            .from('equipo')
+                            .select(`
                   nombre,
                   miembrosequipo ( usuario:usuario ( correo, nombre ) )
                 `)
-                .eq('id', miembro.id_equipo)
-                .maybeSingle();
+                            .eq('id', miembro.id_equipo)
+                            .maybeSingle();
 
-              for (const m of equipo.miembrosequipo) {
-                await sendMail(
-                  m.usuario.correo,
-                  '🎉 ¡Tu equipo fue inscrito!',
-                  `<h2>🎉 Inscripción exitosa</h2>
+                        for (const m of equipo.miembrosequipo) {
+                            await sendMail(
+                                m.usuario.correo,
+                                '🎉 ¡Tu equipo fue inscrito!',
+                                `<h2>🎉 Inscripción exitosa</h2>
                    <p>Hola <strong>${m.usuario.nombre}</strong>,</p>
                    <p>El equipo <strong>${equipo.nombre}</strong> se ha inscrito al evento <strong>${evento.nombre}</strong>.</p>`
-                );
-              }
-            } else {
-              // flujo individual
-              const { data: u } = await supabase
-                .from('usuario')
-                .select('correo, nombre')
-                .eq('id', insc.id_usuario)
-                .maybeSingle();
+                            );
+                        }
+                    } else {
+                        // flujo individual
+                        const {data: u} = await supabase
+                            .from('usuario')
+                            .select('correo, nombre')
+                            .eq('id', insc.id_usuario)
+                            .maybeSingle();
 
-              await sendMail(
-                u.correo,
-                '🎉 ¡Inscripción Exitosa!',
-                `<h2>🎉 Inscripción Exitosa</h2>
+                        await sendMail(
+                            u.correo,
+                            '🎉 ¡Inscripción Exitosa!',
+                            `<h2>🎉 Inscripción Exitosa</h2>
                  <p>Hola <strong>${u.nombre}</strong>,</p>
                  <p>Te has inscrito al evento <strong>${evento.nombre}</strong>.</p>`
-              );
-            }
+                        );
+                    }
 
-            // refresca tu UI si hace falta
-            setRefresco(r => r + 1);
-          }
-        )
-        .subscribe(status => {
-          console.log("📡 Estado de la suscripción:", status);
-        });
+                    // refresca tu UI si hace falta
+                    setRefresco(r => r + 1);
+                }
+            )
+            .subscribe(status => {
+                console.log("📡 Estado de la suscripción:", status);
+            });
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, [usuarioId, evento]);
 
 
@@ -767,12 +775,12 @@ const DetalleEvento = () => {
                                     ))}
                                 </ul>
                                 <p>
-                                  <strong>👨‍⚖️ Tribunal asignado:</strong>{' '}
-                                  {miEquipo.tribunalNombre ?? '— Por designar —'}
+                                    <strong>👨‍⚖️ Tribunal asignado:</strong>{' '}
+                                    {miEquipo.tribunalNombre ?? '— Por designar —'}
                                 </p>
                                 <p>
-                                  <strong>🧑‍🏫 Mentor asignado:</strong>{' '}
-                                  {mentorNombre ?? '— Por designar —'}
+                                    <strong>🧑‍🏫 Mentor asignado:</strong>{' '}
+                                    {mentorNombre ?? '— Por designar —'}
                                 </p>
                                 {miEquipo?.proyecto?.url_informe ? (
                                     <div className="mt-3">

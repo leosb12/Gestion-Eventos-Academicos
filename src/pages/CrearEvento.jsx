@@ -61,7 +61,7 @@ const CrearEvento = () => {
     const [claveAsistencia, setClaveAsistencia] = useState('');
     const [showCropper, setShowCropper] = useState(false);
     const [rawImage, setRawImage] = useState(null);
-
+    
 
     useEffect(() => {
         const fetchData = async () => {

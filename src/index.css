@@ -118,12 +118,13 @@ body {
 }
 
 .table-responsive {
-  max-height: 60vh; /* ajusta según tu preferencia */
+    max-height: 60vh; /* ajusta según tu preferencia */
 }
+
 .table thead th {
-  position: sticky;
-  top: 0;
-  background: #fff;
-  z-index: 1;
+    position: sticky;
+    top: 0;
+    background: #fff;
+    z-index: 1;
 }
 

@@ -43,29 +43,29 @@ export default function Navbar() {
     const handleOpenModal = () => setShowModal(true);
     const handleCancel = () => setShowModal(false);
     const handleConfirmLogout = async () => {
-      try {
-        const { data: sessionData } = await supabase.auth.getSession();
+        try {
+            const {data: sessionData} = await supabase.auth.getSession();
 
-        if (sessionData?.session) {
-          const { error } = await supabase.auth.signOut();
-          if (error) {
-            console.warn("⚠️ No se pudo cerrar sesión en Supabase:", error.message);
-          } else {
-            console.log("✅ Sesión cerrada en Supabase.");
-          }
-        } else {
-          console.log("ℹ️ No hay sesión activa.");
+            if (sessionData?.session) {
+                const {error} = await supabase.auth.signOut();
+                if (error) {
+                    console.warn("⚠️ No se pudo cerrar sesión en Supabase:", error.message);
+                } else {
+                    console.log("✅ Sesión cerrada en Supabase.");
+                }
+            } else {
+                console.log("ℹ️ No hay sesión activa.");
+            }
+        } catch (error) {
+            console.error("❌ Error inesperado al cerrar sesión:", error.message);
+        } finally {
+            // 🧹 Limpiar cache de correo
+            clearCorreoCache();
+
+            // Cerrar modal y redirigir
+            setShowModal(false);
+            navigate('/iniciar-sesion');
         }
-      } catch (error) {
-        console.error("❌ Error inesperado al cerrar sesión:", error.message);
-      } finally {
-        // 🧹 Limpiar cache de correo
-        clearCorreoCache();
-
-        // Cerrar modal y redirigir
-        setShowModal(false);
-        navigate('/iniciar-sesion');
-      }
     };
 
     return (
@@ -129,7 +129,12 @@ export default function Navbar() {
                                         Categorías... ▼
                                     </button>
                                     {submenuCategoriaAbierto && (
-                                        <ul className="dropdown-menu show" style={{position: 'relative', background: 'transparent', border: 'none', boxShadow: 'none'}}>
+                                        <ul className="dropdown-menu show" style={{
+                                            position: 'relative',
+                                            background: 'transparent',
+                                            border: 'none',
+                                            boxShadow: 'none'
+                                        }}>
                                             {tiposEvento.map((tipo) => (
                                                 <li key={tipo.id}>
                                                     <NavLink
@@ -162,7 +167,12 @@ export default function Navbar() {
                                         Mis Eventos ▼
                                     </button>
                                     {submenuMisEventosAbierto && (
-                                        <ul className="dropdown-menu show" style={{position: 'relative', background: 'transparent', border: 'none', boxShadow: 'none'}}>
+                                        <ul className="dropdown-menu show" style={{
+                                            position: 'relative',
+                                            background: 'transparent',
+                                            border: 'none',
+                                            boxShadow: 'none'
+                                        }}>
                                             <li>
                                                 <NavLink
                                                     to="/mis-eventos"
@@ -190,7 +200,9 @@ export default function Navbar() {
                                 {/* Opciones con sesión iniciada */}
                                 {session && (
                                     <>
-                                        <li><hr className="dropdown-divider"/></li>
+                                        <li>
+                                            <hr className="dropdown-divider"/>
+                                        </li>
                                         <li>
                                             <NavLink
                                                 to="/crear-evento"
@@ -213,12 +225,22 @@ export default function Navbar() {
                                                     setSubmenuCategoriaAbierto(false);
                                                     setSubmenuMisEventosAbierto(false);
                                                 }}
-                                                style={{width: '100%', textAlign: 'left', background: 'none', border: 'none'}}
+                                                style={{
+                                                    width: '100%',
+                                                    textAlign: 'left',
+                                                    background: 'none',
+                                                    border: 'none'
+                                                }}
                                             >
                                                 Gestión de Eventos ▼
                                             </button>
                                             {submenuGestionAbierto && (
-                                                <ul className="dropdown-menu show" style={{position: 'relative', background: 'transparent', border: 'none', boxShadow: 'none'}}>
+                                                <ul className="dropdown-menu show" style={{
+                                                    position: 'relative',
+                                                    background: 'transparent',
+                                                    border: 'none',
+                                                    boxShadow: 'none'
+                                                }}>
                                                     {tipoUsuario === 7 && (
                                                         <li>
                                                             <NavLink
@@ -249,7 +271,70 @@ export default function Navbar() {
                                     </>
                                 )}
                             </ul>
+
                         </li>
+                        {session && (
+                            <li className="nav-item dropdown">
+                                <a
+                                    className="nav-link dropdown-toggle fs-5 text-white"
+                                    href="#"
+                                    role="button"
+                                    data-bs-toggle="dropdown"
+                                    aria-expanded="false"
+                                >
+                                    Equipos y Proyectos
+                                </a>
+                                <ul className="dropdown-menu bg-primary border-0 shadow-none">
+                                    <li>
+                                        <NavLink
+                                            to="/gestionar-equipos"
+                                            className={({isActive}) =>
+                                                `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                                            }
+                                        >
+                                            Gestionar Equipos
+                                        </NavLink>
+                                    </li>
+                                    <li>
+                                        <NavLink
+                                            to="/gestionar-proyectos"
+                                            className={({isActive}) =>
+                                                `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                                            }
+                                        >
+                                            Gestionar Proyectos
+                                        </NavLink>
+                                    </li>
+
+                                    {[6, 7].includes(tipoUsuario) && (
+                                        <li>
+                                            <NavLink
+                                                to="/asignar-tribunal"
+                                                className={({isActive}) =>
+                                                    `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                                                }
+                                            >
+                                                Asignar Tribunal
+                                            </NavLink>
+                                        </li>
+                                    )}
+
+                                    {[6, 7].includes(tipoUsuario) && (
+                                        <li>
+                                            <NavLink
+                                                to="/asignar-mentor"
+                                                className={({isActive}) =>
+                                                    `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                                                }
+                                            >
+                                                Asignar Mentor
+                                            </NavLink>
+                                        </li>
+                                    )}
+                                </ul>
+                            </li>
+                        )}
+
 
                         {/* Menú Usuarios para administradores */}
                         {tipoUsuario === 7 && (
@@ -294,7 +379,9 @@ export default function Navbar() {
                                             Eliminar Usuario
                                         </NavLink>
                                     </li>
-                                    <li><hr className="dropdown-divider"/></li>
+                                    <li>
+                                        <hr className="dropdown-divider"/>
+                                    </li>
                                     <li>
                                         <NavLink
                                             to="/bitacora"
@@ -339,7 +426,8 @@ export default function Navbar() {
                                         >Editar Perfil</NavLink>
                                     </li>
                                     <li>
-                                        <button className="dropdown-item text-white" onClick={handleOpenModal} style={{cursor: 'pointer'}}>
+                                        <button className="dropdown-item text-white" onClick={handleOpenModal}
+                                                style={{cursor: 'pointer'}}>
                                             Cerrar Sesión
                                         </button>
                                     </li>
