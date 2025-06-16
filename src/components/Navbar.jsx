@@ -218,19 +218,32 @@ export default function Navbar() {
                                                 Crear Evento
                                             </NavLink>
                                         </li>
-                                        {(tipoUsuario === 6 || tipoUsuario === 7) && (
-                                            <li>
-                                                <NavLink
-                                                    to="/gestionar-eventos"
-                                                    className={({isActive}) =>
-                                                        `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
-                                                    }
-                                                >
-                                                    Gestionar Eventos
-                                                </NavLink>
-                                            </li>
-                                        )}
-                                    </>
+                                     {(tipoUsuario === 6 || tipoUsuario === 7) && (
+    <>
+        <li>
+            <NavLink
+                to="/gestionar-eventos"
+                className={({ isActive }) =>
+                    `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                }
+            >
+                Gestionar Eventos
+            </NavLink>
+        </li>
+        <li>
+            <NavLink
+                to="/Estadisticas"
+                className={({ isActive }) =>
+                    `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                }
+            >
+                Estadísticas
+            </NavLink>
+        </li>
+    </>
+)}
+
+                             </>
                                 )}
                             </ul>
                         </li>
