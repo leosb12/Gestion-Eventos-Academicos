@@ -224,6 +224,7 @@ const DetalleEvento = () => {
             // obtén el token una sola vez al subscribirte (o aquí mismo)
             const { data: session } = await supabase.auth.getSession();
             const token = session?.access_token;
+            console.log('>>> token:', token);
 
             const sendMail = (to, subject, html) =>
               fetch('https://sgpnyeashmuwwlpvxbgm.supabase.co/functions/v1/enviar-correo', {
