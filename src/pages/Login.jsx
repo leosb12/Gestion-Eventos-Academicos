@@ -10,7 +10,7 @@ import supabase from '../utils/supabaseClient.js';
 import { getCorreoCache, setCorreoCache } from '../utils/cacheUser.js';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import {supabaseKey} from '../utils/supabaseClient.js';
+import supabaseKey from '../utils/supabaseClient.js';
 
 const Login = () => {
   const [registro, setRegistro] = useState('');
