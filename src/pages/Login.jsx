@@ -10,6 +10,7 @@ import supabase from '../utils/supabaseClient.js';
 import { getCorreoCache, setCorreoCache } from '../utils/cacheUser.js';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import {VITE_SUPABASE_KEY} from '../utils/supabaseClient.js';
 
 const Login = () => {
   const [registro, setRegistro] = useState('');
@@ -77,15 +78,6 @@ const handleResetPassword = async () => {
     return;
   }
 
-  // Obtén la sesión del usuario para obtener el token
-  const { data: {session} } = await supabase.auth.getSession();
-  const accessToken = session?.access_token;
-  console.log(accessToken)
-  if (!accessToken) {
-    toast.error("No se pudo obtener el token de autorización.");
-    return;
-  }
-
   // Construir el fetch a tu función Edge
   try {
     setLoading(true);
@@ -95,7 +87,8 @@ const handleResetPassword = async () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${accessToken}`, // Aquí añades el token
+          'apikey': VITE_SUPABASE_KEY,
+          "Authorization": `Bearer ${VITE_SUPABASE_KEY}`, // Aquí añades el token
         },
         body: JSON.stringify({ registro: registroInt }),
       }
