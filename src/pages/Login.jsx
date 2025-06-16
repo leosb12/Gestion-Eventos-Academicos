@@ -80,7 +80,7 @@ const handleResetPassword = async () => {
   // Obtén la sesión del usuario para obtener el token
   const { data: {session} } = await supabase.auth.getSession();
   const accessToken = session?.access_token;
-
+  console.log(accessToken)
   if (!accessToken) {
     toast.error("No se pudo obtener el token de autorización.");
     return;
