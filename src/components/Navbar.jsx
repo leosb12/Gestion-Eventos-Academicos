@@ -265,6 +265,18 @@ export default function Navbar() {
                                                             </NavLink>
                                                         </li>
                                                     )}
+                                                    {tipoUsuario === 7 && (
+                                                      <li>
+                                                        <NavLink
+                                                          to="/gestionar-notificaciones"
+                                                          className={({ isActive }) =>
+                                                            `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                                                          }
+                                                        >
+                                                          Gestionar Notificaciones
+                                                        </NavLink>
+                                                      </li>
+                                                    )}
                                                 </ul>
                                             )}
                                         </li>
@@ -331,6 +343,7 @@ export default function Navbar() {
                                             </NavLink>
                                         </li>
                                     )}
+
                                 </ul>
                             </li>
                         )}
