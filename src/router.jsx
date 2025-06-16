@@ -28,6 +28,7 @@ import Estadisticas from "./pages/Estadisticas.jsx";
 import AsignarTribunal from "./pages/AsignarTribunal.jsx";
 import AsignarMentor from "./pages/AsignarMentor.jsx";
 import GestionarProyectos from './pages/GestionarProyectos';
+import GestionarNotificaciones from "./pages/GestionarNotificaciones.jsx";
 
 export const router = createBrowserRouter([
     {
@@ -219,6 +220,14 @@ export const router = createBrowserRouter([
                 element: (
                     <PrivateRoute>
                         <AsignarMentor/>
+                    </PrivateRoute>
+                )
+            },
+            {
+                path: "gestionar-notificaciones",
+                element: (
+                    <PrivateRoute>
+                        <GestionarNotificaciones/>
                     </PrivateRoute>
                 )
             }
