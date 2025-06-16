@@ -25,6 +25,9 @@ import DefinirProyecto from './pages/DefinirProyecto.jsx';
 import DetalleEventoCreador from "./pages/DetalleEventoCreador.jsx";
 import Bitacora from "./pages/Bitacora.jsx";
 import Estadisticas from "./pages/Estadisticas.jsx";
+import AsignarTribunal from "./pages/AsignarTribunal.jsx";
+import AsignarMentor from "./pages/AsignarMentor.jsx";
+
 
 export const router = createBrowserRouter([
     {
@@ -194,6 +197,22 @@ export const router = createBrowserRouter([
                         <Estadisticas/>
                     </PrivateRoute>
                 )
+            },
+            {
+                path: "asignar-tribunal",
+                element: (
+                    <PrivateRoute>
+                        <AsignarTribunal/>
+                    </PrivateRoute>
+                )
+            },
+            {
+                path: "asignar-mentor",
+                element: (
+                    <PrivateRoute>
+                        <AsignarMentor/>
+                    </PrivateRoute>
+                )
             }
         ]
     },
@@ -202,4 +221,5 @@ export const router = createBrowserRouter([
         path: "*",
         element: <NotFound/>
     }
+
 ]);
