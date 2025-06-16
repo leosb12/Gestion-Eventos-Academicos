@@ -462,7 +462,7 @@ const CrearEvento = () => {
 
                 </EventWrapper>
             </AuthBackground>
-            <ToastContainer position="top-right" autoClose={3000}/>D
+            <ToastContainer position="top-right" autoClose={3000}/>
         </>
     );
 };
