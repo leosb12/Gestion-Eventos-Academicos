@@ -149,7 +149,6 @@ const DefinirProyecto = () => {
                 descripcion: descripcionProyecto,
                 id_equipo: idEquipo,
                 id_materia: parseInt(materiaSeleccionada),
-                id_estado: 4,
                 url_informe: informeURL
             });
 

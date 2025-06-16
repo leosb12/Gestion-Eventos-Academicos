@@ -273,7 +273,7 @@ export default function Navbar() {
                             </ul>
 
                         </li>
-                        {session && [3, 4, 6, 7].includes(tipoUsuario) && (
+                        {session && (
                             <li className="nav-item dropdown">
                                 <a
                                     className="nav-link dropdown-toggle fs-5 text-white"
@@ -285,42 +285,41 @@ export default function Navbar() {
                                     Equipos y Proyectos
                                 </a>
                                 <ul className="dropdown-menu bg-primary border-0 shadow-none">
+                                    <li>
+                                        <NavLink
+                                            to="/gestionar-equipos"
+                                            className={({isActive}) =>
+                                                `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                                            }
+                                        >
+                                            Gestionar Equipos
+                                        </NavLink>
+                                    </li>
+                                    <li>
+                                        <NavLink
+                                            to="/gestionar-proyectos"
+                                            className={({isActive}) =>
+                                                `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                                            }
+                                        >
+                                            Gestionar Proyectos
+                                        </NavLink>
+                                    </li>
+
                                     {[6, 7].includes(tipoUsuario) && (
-                                        <>
-                                            <li>
-                                                <NavLink
-                                                    to="/gestionar-equipos"
-                                                    className={({isActive}) =>
-                                                        `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
-                                                    }
-                                                >
-                                                    Gestionar Equipos
-                                                </NavLink>
-                                            </li>
-                                            <li>
-                                                <NavLink
-                                                    to="/gestionar-proyectos"
-                                                    className={({isActive}) =>
-                                                        `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
-                                                    }
-                                                >
-                                                    Gestionar Proyectos
-                                                </NavLink>
-                                            </li>
-                                            <li>
-                                                <NavLink
-                                                    to="/asignar-tribunal"
-                                                    className={({isActive}) =>
-                                                        `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
-                                                    }
-                                                >
-                                                    Asignar Tribunal
-                                                </NavLink>
-                                            </li>
-                                        </>
+                                        <li>
+                                            <NavLink
+                                                to="/asignar-tribunal"
+                                                className={({isActive}) =>
+                                                    `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                                                }
+                                            >
+                                                Asignar Tribunal
+                                            </NavLink>
+                                        </li>
                                     )}
 
-                                    {[3, 6, 7].includes(tipoUsuario) && (
+                                    {[6, 7].includes(tipoUsuario) && (
                                         <li>
                                             <NavLink
                                                 to="/asignar-mentor"

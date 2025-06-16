@@ -27,7 +27,7 @@ import Bitacora from "./pages/Bitacora.jsx";
 import Estadisticas from "./pages/Estadisticas.jsx";
 import AsignarTribunal from "./pages/AsignarTribunal.jsx";
 import AsignarMentor from "./pages/AsignarMentor.jsx";
-
+import GestionarProyectos from './pages/GestionarProyectos';
 
 export const router = createBrowserRouter([
     {
@@ -66,6 +66,14 @@ export const router = createBrowserRouter([
                 element: (
                     <PrivateRoute>
                         <Dashboard/>
+                    </PrivateRoute>
+                )
+            },
+            {
+                path: "gestionar-proyectos",
+                element: (
+                    <PrivateRoute>
+                        <GestionarProyectos/>
                     </PrivateRoute>
                 )
             },
