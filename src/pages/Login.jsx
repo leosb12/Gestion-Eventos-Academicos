@@ -10,7 +10,7 @@ import supabase from '../utils/supabaseClient.js';
 import { getCorreoCache, setCorreoCache } from '../utils/cacheUser.js';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import {VITE_SUPABASE_KEY} from '../utils/supabaseClient.js';
+import {supabaseKey} from '../utils/supabaseClient.js';
 
 const Login = () => {
   const [registro, setRegistro] = useState('');
@@ -87,8 +87,8 @@ const handleResetPassword = async () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          'apikey': VITE_SUPABASE_KEY,
-          "Authorization": `Bearer ${VITE_SUPABASE_KEY}`, // Aquí añades el token
+          'apikey': supabaseKey,
+          "Authorization": `Bearer ${supabaseKey}`, // Aquí añades el token
         },
         body: JSON.stringify({ registro: registroInt }),
       }
