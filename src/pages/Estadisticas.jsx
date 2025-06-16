@@ -162,12 +162,12 @@ useEffect(() => {
 
         const idsEquipos = eq?.map(e => e.id) || [];
         const { data: proj } = await supabase
-          .from('proyecto')
-          .select('id, url_informe')
-          .eq('id_estado', 4)
-          .in('id_equipo', idsEquipos);
-        proyectosRegistrados = proj?.filter(p => p.url_informe).length || 0;
-        tieneProyectos = proyectosRegistrados > 0;
+  .from('proyecto')
+  .select('id')
+  .in('id_equipo', idsEquipos)
+  .not('url_informe', 'is', null);
+proyectosRegistrados = proj?.length || 0;
+tieneProyectos = proyectosRegistrados > 0;
 
         const { data: md } = await supabase
           .from('miembrosequipo')
@@ -220,13 +220,13 @@ useEffect(() => {
           numEquipos = idsEquipos.length;
           tieneEquipos = numEquipos > 0;
 
-          const { data: proj } = await supabase
-            .from('proyecto')
-            .select('id, url_informe')
-            .eq('id_estado', 4)
-            .in('id_equipo', idsEquipos);
-          proyectosRegistrados = proj?.filter(p => p.url_informe).length || 0;
-          tieneProyectos = proyectosRegistrados > 0;
+const { data: proj } = await supabase
+  .from('proyecto')
+  .select('id')
+  .in('id_equipo', idsEquipos)
+  .not('url_informe', 'is', null);
+proyectosRegistrados = proj?.length || 0;
+tieneProyectos = proyectosRegistrados > 0;
 
           const { data: md } = await supabase
             .from('miembrosequipo')
@@ -407,7 +407,7 @@ const equiposCompletosData = {
             <Col md={6} className="mb-4">
               <Card>
                 <Card.Body>
-                  <Card.Title>Proyectos Registrados</Card.Title>
+                  <Card.Title>Proyectos Con Informe</Card.Title>
                   <Card.Text>{estadisticas.proyectosRegistrados || 0} proyectos</Card.Text>
                 </Card.Body>
               </Card>
