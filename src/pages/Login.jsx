@@ -78,7 +78,7 @@ const handleResetPassword = async () => {
   }
 
   // Obtén la sesión del usuario para obtener el token
-  const { data: session } = await supabase.auth.getSession();
+  const { data: {session} } = await supabase.auth.getSession();
   const accessToken = session?.access_token;
 
   if (!accessToken) {
