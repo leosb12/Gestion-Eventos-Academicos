@@ -222,7 +222,7 @@ const DetalleEvento = () => {
             const insc = payload.new;
 
             // obtén el token una sola vez al subscribirte (o aquí mismo)
-            const { data: session } = await supabase.auth.getSession();
+            const { data: {session} } = await supabase.auth.getSession();
             const token = session?.access_token;
             console.log('>>> token:', token);
 
