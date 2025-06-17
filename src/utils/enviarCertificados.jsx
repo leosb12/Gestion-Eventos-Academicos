@@ -7,7 +7,7 @@ import { toast } from "react-toastify";
 
 export async function enviarCertificadosParaTodos(id_evento) {
   try {
-    id_evento = typeof id_evento === "object" ? id_evento.id : parseInt(id_evento);
+    id_evento = typeof id_evento === 'object' ? id_evento.id : parseInt(id_evento);
     console.log("📨 Enviando certificados para evento:", id_evento);
 
     const { data: usuarios, error } = await supabase
@@ -19,7 +19,6 @@ export async function enviarCertificadosParaTodos(id_evento) {
 
     const session = await supabase.auth.getSession();
     const token = session.data?.session?.access_token;
-    const user = session.data?.session?.user;
 
     let enviados = 0;
 
@@ -33,22 +32,27 @@ export async function enviarCertificadosParaTodos(id_evento) {
 
       const cert = datos[0];
       console.log("📋 Certificado para:", cert);
-
       const response = await fetch("/plantilla-certificado.docx");
       const arrayBuffer = await response.arrayBuffer();
       const zip = new PizZip(arrayBuffer);
       const doc = new Docxtemplater(zip, {
-        paragraphLoop: true,
-        linebreaks: true,
-        delimiters: { start: "%%", end: "%%" },
-      });
+  paragraphLoop: true,
+  linebreaks: true,
+  delimiters: {
+    start: '%%',
+    end: '%%'
+  }
+});
+
+      console.log("DATOS DEL CERTIFICADO:", cert);
 
       doc.setData({
-        nombre: cert.nombre,
-        tipoevento: cert.tipoevento,
-        evento: cert.evento,
-        fechafin: cert.fechafin,
-      });
+  nombre: cert.nombre,
+  tipoevento: cert.tipoevento,
+  evento: cert.evento,
+  fechafin: cert.fechafin
+});
+
 
       doc.render();
       const out = doc.getZip().generate({ type: "blob" });
@@ -84,16 +88,6 @@ export async function enviarCertificadosParaTodos(id_evento) {
 
       enviados++;
     }
-
-    // ✅ Registrar en bitácora
-    await supabase.from("bitacora").insert({
-      actor_email: user?.email || "desconocido",
-      actor_registro: user?.id || null,
-      accion: "Generar certificados",
-      table_name: "certificado",
-      record_id: `${id_evento}`,
-      description: `Se enviaron ${enviados} certificados para el evento con ID ${id_evento}`,
-    });
 
     toast.success(`🎉 Certificados enviados: ${enviados}`);
   } catch (e) {
