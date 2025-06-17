@@ -29,6 +29,8 @@ import AsignarTribunal from "./pages/AsignarTribunal.jsx";
 import AsignarMentor from "./pages/AsignarMentor.jsx";
 import GestionarProyectos from './pages/GestionarProyectos';
 import GestionarNotificaciones from "./pages/GestionarNotificaciones.jsx";
+import CertificadosEventos from "./pages/CertificadosEventos.jsx";
+
 
 export const router = createBrowserRouter([
     {
@@ -228,6 +230,14 @@ export const router = createBrowserRouter([
                 element: (
                     <PrivateRoute>
                         <GestionarNotificaciones/>
+                    </PrivateRoute>
+                )
+            },
+            {
+                path: "enviar-certificados",
+                element: (
+                    <PrivateRoute>
+                        <CertificadosEventos />
                     </PrivateRoute>
                 )
             }

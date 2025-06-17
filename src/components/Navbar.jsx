@@ -277,6 +277,19 @@ export default function Navbar() {
                                                         </NavLink>
                                                       </li>
                                                     )}
+                                                    {(tipoUsuario === 6 || tipoUsuario === 7) && (
+                                                        <li>
+                                                            <NavLink
+                                                                to="/enviar-certificados"
+                                                                className={({isActive}) =>
+                                                                    `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                                                                }
+                                                            >
+                                                                Generar Certificados
+                                                            </NavLink>
+                                                        </li>
+                                                    )}
+
                                                 </ul>
                                             )}
                                         </li>
