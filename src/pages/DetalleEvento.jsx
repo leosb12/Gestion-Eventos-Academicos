@@ -10,7 +10,7 @@ import MarcarAsistencia from '../components/MarcarAsistencia.jsx';
 import EscanearQR from '../components/EscanearQR';
 import SubirQR from '../components/SubirQR';
 import GenerarQR from '../components/GenerarQR';
-import {enviarCertificadosParaTodos} from "../utils/enviarCertificados";
+
 
 const DetalleEvento = () => {
     const {id} = useParams()
@@ -912,23 +912,7 @@ const DetalleEvento = () => {
                         </div>
                     </section>
                 )}
-                {(tipoUsuario === 6 || tipoUsuario === 7) && (
-                    <div
-                        className="w-100 w-md-auto d-flex align-items-md-center justify-content-center justify-content-md-end mt-3 mt-md-0">
-                        {evento?.id_estado === 5 ? (
-                            <button
-                                className="btn btn-success"
-                                style={{width: '250px'}}
-                                onClick={() => enviarCertificadosParaTodos(evento.id)}>
-                                Enviar certificados a todos los asistentes
-                            </button>
-                        ) : (
-                            <p className="text-danger text-center m-0">
-                                El evento no ha finalizado todavía.
-                            </p>
-                        )}
-                    </div>
-                )}
+
             </div>
             <ToastContainer position="top-right" autoClose={3000}/>
         </>
