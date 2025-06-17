@@ -112,6 +112,14 @@ export default function Navbar() {
                                 Eventos
                             </a>
                             <ul className="dropdown-menu bg-primary border-0 shadow-none">
+                                <li>
+                                    <NavLink
+                                        to="/calendario-eventos"
+                                        className={({ isActive }) => `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`}
+                                    >
+                                        Calendario de Eventos
+                                    </NavLink>
+                                </li>
 
                                 {/* Submenu Categorías */}
                                 <li className="dropdown-submenu">
