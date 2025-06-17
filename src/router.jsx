@@ -30,6 +30,8 @@ import AsignarMentor from "./pages/AsignarMentor.jsx";
 import GestionarProyectos from './pages/GestionarProyectos';
 import GestionarNotificaciones from "./pages/GestionarNotificaciones.jsx";
 import CertificadosEventos from "./pages/CertificadosEventos.jsx";
+import CalendarioEventos from './pages/CalendarioEventos';
+
 
 
 export const router = createBrowserRouter([
@@ -238,6 +240,14 @@ export const router = createBrowserRouter([
                 element: (
                     <PrivateRoute>
                         <CertificadosEventos />
+                    </PrivateRoute>
+                )
+            },
+            {
+                path: "calendario-eventos",
+                element: (
+                    <PrivateRoute>
+                        <CalendarioEventos />
                     </PrivateRoute>
                 )
             }
