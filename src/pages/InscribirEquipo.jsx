@@ -289,7 +289,6 @@ const InscribirEquipo = () => {
                 .insert(inscripciones);
 
             if (inscError) throw inscError;
-
             toast.success('Equipo inscrito correctamente.');
             setTimeout(() => navigate('/'), 3500);
 

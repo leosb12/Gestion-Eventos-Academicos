@@ -197,7 +197,8 @@ const CrearEvento = () => {
             }
 
             toast.dismiss(); // por si había uno pendiente
-            navigate('/', {state: {eventoCreado: true}});
+            navigate(`/detalle-evento-creador/${insertedEvento.id}`);
+
         } catch (err) {
             toast.error('Error creando evento');
             console.error(err);
@@ -462,7 +463,7 @@ const CrearEvento = () => {
 
                 </EventWrapper>
             </AuthBackground>
-            <ToastContainer position="top-right" autoClose={3000}/>D
+            <ToastContainer position="top-right" autoClose={3000}/>
         </>
     );
 };

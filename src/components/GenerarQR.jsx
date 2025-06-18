@@ -1,13 +1,14 @@
-import React, {useRef} from 'react';
-import QRCode from 'react-qr-code'; // ✅ Librería correcta
+import React, {useRef, useMemo} from 'react';
+import QRCode from 'react-qr-code';
 
 const GenerarQR = ({eventoId}) => {
     const qrRef = useRef();
 
-    const payload = JSON.stringify({
+   
+    const payload = useMemo(() => JSON.stringify({
         evento_id: eventoId,
         timestamp: new Date().toISOString()
-    });
+    }), [eventoId]);
 
     const descargarQR = () => {
         const svg = qrRef.current;
@@ -52,6 +53,3 @@ const GenerarQR = ({eventoId}) => {
 };
 
 export default GenerarQR;
-
-
-

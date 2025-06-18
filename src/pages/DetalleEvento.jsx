@@ -32,7 +32,9 @@ const DetalleEvento = () => {
     const [asistenciaRegistrada, setAsistenciaRegistrada] = useState(null);
     const [mostrarEscaner, setMostrarEscaner] = useState(false);
     const [asistenciaVerificada, setAsistenciaVerificada] = useState(false);
-
+    const [mentorNombre, setMentorNombre] = useState(null);
+    const [claveIngresada, setClaveIngresada] = useState('');
+    const [claveValidada, setClaveValidada] = useState(false);
 
     useEffect(() => {
         fetchEvento()
@@ -53,6 +55,11 @@ const DetalleEvento = () => {
     const subirInformePDF = async (archivo) => {
         if (!archivo || archivo.type !== 'application/pdf') {
             toast.error('Archivo inválido. Debe ser PDF.');
+            return;
+        }
+
+        if (!miEquipo?.proyecto?.id) {
+            toast.error('Error: el proyecto aún no ha sido creado.');
             return;
         }
 
@@ -84,7 +91,10 @@ const DetalleEvento = () => {
             toast.success('Informe subido correctamente.');
             setMiEquipo(prev => ({
                 ...prev,
-                proyecto: {...prev.proyecto, url_informe: urlData.publicUrl}
+                proyecto: {
+                    ...(prev.proyecto || {}),
+                    url_informe: urlData.publicUrl
+                }
             }));
         } catch (err) {
             console.error(err);
@@ -94,6 +104,7 @@ const DetalleEvento = () => {
         }
     };
 
+
     useEffect(() => {
         console.log("🔍 Ejecutando efecto para obtener equipo");
 
@@ -102,68 +113,93 @@ const DetalleEvento = () => {
                 console.log("⛔ Evento, usuarioId o inscripción aún no están listos");
                 return;
             }
-
             const tipo = parseInt(evento.id_tevento);
             if (tipo !== 2 && tipo !== 4) {
                 console.log("ℹ️ El evento no es Feria ni Hackathon");
                 return;
             }
 
-            console.log("✅ Buscando equipo del usuario", usuarioId, "en evento", evento.id);
-
+            // 1) Obtengo el id_equipo
             const {data: miembro, error: errorMiembro} = await supabase
-                .from('miembrosequipo')
-                .select('id_equipo, equipo ( id_evento )')
-                .eq('id_usuario', usuarioId);
+                .from("miembrosequipo")
+                .select("id_equipo, equipo ( id_evento )")
+                .eq("id_usuario", usuarioId);
 
             const miembroValido = miembro?.find(m => m.equipo?.id_evento === evento.id);
-
             if (!miembroValido) {
-                console.warn("❌ No se encontró equipo válido del usuario en este evento");
                 setMiEquipo(null);
                 return;
             }
-
             const idEquipo = miembroValido.id_equipo;
 
+            // 2) Traigo datos de equipo
             const {data: equipo, error: errorEquipo} = await supabase
-                .from('equipo')
+                .from("equipo")
                 .select(`
-                id, nombre,
-                nivelgrupo (
-                    nivel:nivel!id (nombre)
-                ),
-                usuario:usuario!id_lider (nombre),
-                miembrosequipo (
-                    id_usuario,
-                    usuario:usuario (nombre)
-                )
-            `)
-                .eq('id', idEquipo)
-                .eq('id_evento', evento.id)
+            id,
+            nombre,
+            nivelgrupo (
+              nivel:nivel!id (nombre)
+            ),
+            usuario:usuario!id_lider (nombre),
+            miembrosequipo (
+              id_usuario,
+              usuario:usuario (nombre)
+            )
+          `)
+                .eq("id", idEquipo)
+                .eq("id_evento", evento.id)
                 .maybeSingle();
 
-            if (!errorEquipo && equipo) {
-                console.log("✅ Equipo obtenido:", equipo);
-                setMiEquipo(equipo);
-            } else {
-                console.warn("❌ No se encontró equipo en la tabla equipo");
-                setMiEquipo(null);
-            }
-
+            // 3) Traigo datos de proyecto
             const {data: proyecto, error: errorProyecto} = await supabase
-                .from('proyecto')
-                .select('id, url_informe')
-                .eq('id_equipo', idEquipo)
+                .from("proyecto")
+                .select("id, url_informe")
+                .eq("id_equipo", idEquipo)
                 .maybeSingle();
 
-            if (!errorProyecto && proyecto) {
-                setMiEquipo(prev => ({...prev, proyecto}));
-            }
+            // 4) Si existe proyecto, compruebo si ya hay tribunal asignado
+            let tribunalNombre = null;
+            if (proyecto) {
+                const {data: asigTribunal} = await supabase
+                    .from("tribunal")
+                    .select("id_usuario")
+                    .eq("id_proyecto", proyecto.id)
+                    .maybeSingle();
 
+                if (asigTribunal?.id_usuario) {
+                    const {data: usuarioTribunal} = await supabase
+                        .from("usuario")
+                        .select("nombre")
+                        .eq("id", asigTribunal.id_usuario)
+                        .maybeSingle();
+                    tribunalNombre = usuarioTribunal?.nombre || null;
+                }
+            }
+            let nombreMentor = null;
+            if (equipo && equipo.id) {
+                const {data: equipoConMentor} = await supabase
+                    .from("equipo")
+                    .select("mentor_id, mentor:usuario!mentor_id(nombre)")
+                    .eq("id", equipo.id)
+                    .maybeSingle();
+
+                if (equipoConMentor?.mentor) {
+                    nombreMentor = equipoConMentor.mentor.nombre;
+                }
+            }
+            // 5) Actualizo miEquipo en un solo set
+            setMiEquipo({
+                ...equipo,
+                proyecto: proyecto || null,
+                tribunalNombre,
+            });
+            setMentorNombre(nombreMentor);
         };
 
-        obtenerMiEquipo();
+        if (evento && usuarioId && estaInscrito) {
+            obtenerMiEquipo();
+        }
     }, [evento, usuarioId, estaInscrito]);
 
 
@@ -178,29 +214,95 @@ const DetalleEvento = () => {
 
     useEffect(() => {
         if (!usuarioId || !evento) return;
+        console.log("🔔 Configurando listener real-time de inscripciones");
 
-        const canal = supabase
-            .channel('inscripcion_realtime')
+        const channel = supabase
+            .channel('inscripciones-en-evento')
             .on(
                 'postgres_changes',
                 {
-                    event: '*',
+                    event: 'INSERT',
                     schema: 'public',
                     table: 'inscripcionevento',
-                    filter: `id_usuario=eq.${usuarioId}`
+                    // ¡filtro por evento, no por usuario!
+                    filter: `id_evento=eq.${evento.id}`
                 },
-                (payload) => {
-                    if (payload.new?.id_evento === parseInt(id) || payload.old?.id_evento === parseInt(id)) {
-                        setRefresco(prev => prev + 1);
+                async (payload) => {
+                    console.log("🔔 Insert inscripcionevento:", payload);
+                    const insc = payload.new;
+
+                    // obtén el token una sola vez al subscribirte (o aquí mismo)
+                    const {data: {session}} = await supabase.auth.getSession();
+                    const token = session?.access_token;
+                    console.log('>>> token:', token);
+
+                    const sendMail = (to, subject, html) =>
+                        fetch('https://sgpnyeashmuwwlpvxbgm.supabase.co/functions/v1/enviar-correo', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                Authorization: `Bearer ${token}`
+                            },
+                            body: JSON.stringify({to, subject, html})
+                        });
+
+                    // ¿insert pertenece a un equipo?
+                    const {data: miembro} = await supabase
+                        .from('miembrosequipo')
+                        .select('id_equipo')
+                        .eq('id_usuario', insc.id_usuario)
+                        .maybeSingle();
+
+                    if (miembro?.id_equipo) {
+                        // flujo grupal
+                        const {data: equipo} = await supabase
+                            .from('equipo')
+                            .select(`
+                  nombre,
+                  miembrosequipo ( usuario:usuario ( correo, nombre ) )
+                `)
+                            .eq('id', miembro.id_equipo)
+                            .maybeSingle();
+
+                        for (const m of equipo.miembrosequipo) {
+                            await sendMail(
+                                m.usuario.correo,
+                                '🎉 ¡Tu equipo fue inscrito!',
+                                `<h2>🎉 Inscripción exitosa</h2>
+                   <p>Hola <strong>${m.usuario.nombre}</strong>,</p>
+                   <p>El equipo <strong>${equipo.nombre}</strong> se ha inscrito al evento <strong>${evento.nombre}</strong>.</p>`
+                            );
+                        }
+                    } else {
+                        // flujo individual
+                        const {data: u} = await supabase
+                            .from('usuario')
+                            .select('correo, nombre')
+                            .eq('id', insc.id_usuario)
+                            .maybeSingle();
+
+                        await sendMail(
+                            u.correo,
+                            '🎉 ¡Inscripción Exitosa!',
+                            `<h2>🎉 Inscripción Exitosa</h2>
+                 <p>Hola <strong>${u.nombre}</strong>,</p>
+                 <p>Te has inscrito al evento <strong>${evento.nombre}</strong>.</p>`
+                        );
                     }
+
+                    // refresca tu UI si hace falta
+                    setRefresco(r => r + 1);
                 }
             )
-            .subscribe();
+            .subscribe(status => {
+                console.log("📡 Estado de la suscripción:", status);
+            });
 
         return () => {
-            supabase.removeChannel(canal);
+            supabase.removeChannel(channel);
         };
     }, [usuarioId, evento]);
+
 
     const obtenerUsuarioId = async () => {
         const {data, error} = await supabase
@@ -324,7 +426,6 @@ const DetalleEvento = () => {
         verificarAsistencia();
     }, [evento, usuarioId, refresco]);
 
-
     const manejarInscripcion = async () => {
         if (!evento || !usuarioId) return;
 
@@ -367,33 +468,6 @@ const DetalleEvento = () => {
                 if (!error) {
                     toast.success('Inscripción completada.');
                     setEstaInscrito(true);
-                    const session = await supabase.auth.getSession();
-                    const accessToken = session.data.session.access_token;
-                    const {data: usuarioData, error: errorNombre} = await supabase
-                        .from('usuario')
-                        .select('nombre')
-                        .eq('correo', user.email)
-                        .maybeSingle();
-                    const nombreUsuario = usuarioData?.nombre || 'Usuario';
-
-                    await fetch('https://sgpnyeashmuwwlpvxbgm.supabase.co/functions/v1/enviar-correo', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${accessToken}`
-                        },
-                        body: JSON.stringify({
-                            to: user.email,
-                            subject: '🎉 ¡Inscripción Exitosa!',
-                            html: `
-                          <h2 style="color:#007bff;">🎉 ¡Inscripción Exitosa!</h2>
-                          <p>Hola <strong>${nombreUsuario}</strong>,</p>
-                          <p>Te has inscrito exitosamente al evento <strong>${evento.nombre}</strong>.</p>
-                          <br/>
-                          <small>Este es un mensaje automático. No responder.</small>
-                        `
-                        })
-                    });
 
                 } else {
                     toast.error('Error al inscribirse al evento.');
@@ -638,9 +712,33 @@ const DetalleEvento = () => {
                         {estaInscrito && (
                             <div className="bg-white p-4 mt-4 mb-3 rounded-4 shadow-sm border d-inline-block">
                                 <h5 className="fw-bold mb-3">Registro de Asistencia</h5>
-                                {evento?.id_estado === 4 && (
-                                    <>
-                                        {!asistenciaVerificada ? (
+                                {evento?.id_estado === 4 ? (
+                                    evento.id_tevento === 4 && !claveValidada ? (
+                                        <div>
+                                            <label className="form-label fw-semibold">🔐 Ingresar clave de
+                                                asistencia:</label>
+                                            <input
+                                                type="password"
+                                                className="form-control mb-2"
+                                                value={claveIngresada}
+                                                onChange={(e) => setClaveIngresada(e.target.value)}
+                                            />
+                                            <button
+                                                className="btn btn-primary"
+                                                onClick={() => {
+                                                    if (claveIngresada.trim() === evento.clave_asistencia) {
+                                                        toast.success('✅ Clave correcta. Ya puedes registrar tu asistencia.');
+                                                        setClaveValidada(true);
+                                                    } else {
+                                                        toast.error('❌ Clave incorrecta.');
+                                                    }
+                                                }}
+                                            >
+                                                Validar clave
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        !asistenciaVerificada ? (
                                             <p className="text-muted">Verificando asistencia...</p>
                                         ) : asistenciaRegistrada ? (
                                             <div className="alert alert-success mt-4" role="alert">
@@ -649,7 +747,6 @@ const DetalleEvento = () => {
                                         ) : (
                                             <div className="mt-4">
                                                 <p className="fw-semibold">Registrar asistencia con QR:</p>
-
                                                 {!mostrarEscaner ? (
                                                     <button
                                                         className="btn btn-outline-primary"
@@ -676,16 +773,20 @@ const DetalleEvento = () => {
                                                     }}
                                                 />
                                             </div>
-                                        )}
-                                    </>
+                                        )
+                                    )
+                                ) : (
+                                    <div className="alert alert-info mt-3" role="alert">
+                                        🕒 El evento no está en curso.
+                                    </div>
                                 )}
+
                                 {(tipoUsuario === 6 || tipoUsuario === 7) && evento?.id_estado === 4 && (
                                     <div className="mt-4 p-3 bg-light border rounded-4 shadow-sm">
                                         <h5 className="fw-bold mb-2">📲 QR para registrar asistencia</h5>
                                         <GenerarQR eventoId={evento.id} usuarioId={usuarioId}/>
                                     </div>
                                 )}
-
                             </div>
                         )}
 
@@ -693,15 +794,23 @@ const DetalleEvento = () => {
                         {miEquipo && (
                             <div className="bg-white p-4 mt-3 mb-3 rounded-4 shadow-sm border">
                                 <h5 className="fw-bold mb-3">Mi Equipo</h5>
-                                <p><strong>Nombre:</strong> {miEquipo.nombre}</p>
-                                <p><strong>Nivel:</strong> {miEquipo.nivelgrupo?.[0]?.nivel?.nombre || '-'}</p>
-                                <p><strong>Líder:</strong> {miEquipo.usuario?.nombre || '-'}</p>
-                                <p><strong>Miembros:</strong></p>
+                                <p><strong>🏷️ Nombre:</strong> {miEquipo.nombre}</p>
+                                <p><strong>📈 Nivel:</strong> {miEquipo.nivelgrupo?.[0]?.nivel?.nombre || '-'}</p>
+                                <p><strong>⭐ Líder:</strong> {miEquipo.usuario?.nombre || '-'}</p>
+                                <p><strong>👥 Miembros:</strong></p>
                                 <ul>
                                     {miEquipo.miembrosequipo.map((m, i) => (
                                         <li key={i}>{m.usuario?.nombre || `Usuario ${m.id_usuario}`}</li>
                                     ))}
                                 </ul>
+                                <p>
+                                    <strong>👨‍⚖️ Tribunal asignado:</strong>{' '}
+                                    {miEquipo.tribunalNombre ?? '— Por designar —'}
+                                </p>
+                                <p>
+                                    <strong>🧑‍🏫 Mentor asignado:</strong>{' '}
+                                    {mentorNombre ?? '— Por designar —'}
+                                </p>
                                 {miEquipo?.proyecto?.url_informe ? (
                                     <div className="mt-3">
                                         <a
@@ -715,7 +824,7 @@ const DetalleEvento = () => {
                                     </div>
                                 ) : (
                                     <div className="mt-3">
-                                        <label className="form-label">Subir Informe Final PDF:</label>
+                                        <label className="form-label">📄 Subir Informe Final PDF:</label>
                                         <input
                                             type="file"
                                             accept=".pdf"

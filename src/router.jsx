@@ -24,6 +24,15 @@ import PublicRoute from "./components/PublicRoute.jsx";
 import DefinirProyecto from './pages/DefinirProyecto.jsx';
 import DetalleEventoCreador from "./pages/DetalleEventoCreador.jsx";
 import Bitacora from "./pages/Bitacora.jsx";
+import Estadisticas from "./pages/Estadisticas.jsx";
+import AsignarTribunal from "./pages/AsignarTribunal.jsx";
+import AsignarMentor from "./pages/AsignarMentor.jsx";
+import GestionarProyectos from './pages/GestionarProyectos';
+import GestionarNotificaciones from "./pages/GestionarNotificaciones.jsx";
+import CertificadosEventos from "./pages/CertificadosEventos.jsx";
+import CalendarioEventos from './pages/CalendarioEventos';
+import GestionarEquipos from './pages/GestionarEquipos';
+
 
 export const router = createBrowserRouter([
     {
@@ -66,12 +75,30 @@ export const router = createBrowserRouter([
                 )
             },
             {
+                path: "gestionar-proyectos",
+                element: (
+                    <PrivateRoute>
+                        <GestionarProyectos/>
+                    </PrivateRoute>
+                )
+            },
+            {
                 path: "crear-evento",
                 element: (
                     <PrivateRoute>
                         <CrearEvento/>
                     </PrivateRoute>
                 )
+            },
+
+            {
+                path: "gestionar-equipos",
+                element: (
+                    <PrivateRoute>
+                        <GestionarEquipos/>
+                    </PrivateRoute>
+                )
+
             },
             {
                 path: "gestionar-eventos",
@@ -185,6 +212,54 @@ export const router = createBrowserRouter([
                         <Bitacora/>
                     </PrivateRoute>
                 )
+            },
+            {
+                path: "Estadisticas",
+                element: (
+                    <PrivateRoute>
+                        <Estadisticas/>
+                    </PrivateRoute>
+                )
+            },
+            {
+                path: "asignar-tribunal",
+                element: (
+                    <PrivateRoute>
+                        <AsignarTribunal/>
+                    </PrivateRoute>
+                )
+            },
+            {
+                path: "asignar-mentor",
+                element: (
+                    <PrivateRoute>
+                        <AsignarMentor/>
+                    </PrivateRoute>
+                )
+            },
+            {
+                path: "gestionar-notificaciones",
+                element: (
+                    <PrivateRoute>
+                        <GestionarNotificaciones/>
+                    </PrivateRoute>
+                )
+            },
+            {
+                path: "enviar-certificados",
+                element: (
+                    <PrivateRoute>
+                        <CertificadosEventos/>
+                    </PrivateRoute>
+                )
+            },
+            {
+                path: "calendario-eventos",
+                element: (
+                    <PrivateRoute>
+                        <CalendarioEventos/>
+                    </PrivateRoute>
+                )
             }
         ]
     },
@@ -193,4 +268,5 @@ export const router = createBrowserRouter([
         path: "*",
         element: <NotFound/>
     }
+
 ]);
