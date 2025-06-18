@@ -33,6 +33,8 @@ const DetalleEvento = () => {
     const [mostrarEscaner, setMostrarEscaner] = useState(false);
     const [asistenciaVerificada, setAsistenciaVerificada] = useState(false);
     const [mentorNombre, setMentorNombre] = useState(null);
+    const [claveIngresada, setClaveIngresada] = useState('');
+    const [claveValidada, setClaveValidada] = useState(false);
 
     useEffect(() => {
         fetchEvento()
@@ -711,46 +713,71 @@ const DetalleEvento = () => {
                             <div className="bg-white p-4 mt-4 mb-3 rounded-4 shadow-sm border d-inline-block">
                                 <h5 className="fw-bold mb-3">Registro de Asistencia</h5>
                                 {evento?.id_estado === 4 ? (
-                                    !asistenciaVerificada ? (
-                                        <p className="text-muted">Verificando asistencia...</p>
-                                    ) : asistenciaRegistrada ? (
-                                        <div className="alert alert-success mt-4" role="alert">
-                                            ✅ Su asistencia ya ha sido registrada.
+                                    evento.id_tevento === 4 && !claveValidada ? (
+                                        <div>
+                                            <label className="form-label fw-semibold">🔐 Ingresar clave de
+                                                asistencia:</label>
+                                            <input
+                                                type="password"
+                                                className="form-control mb-2"
+                                                value={claveIngresada}
+                                                onChange={(e) => setClaveIngresada(e.target.value)}
+                                            />
+                                            <button
+                                                className="btn btn-primary"
+                                                onClick={() => {
+                                                    if (claveIngresada.trim() === evento.clave_asistencia) {
+                                                        toast.success('✅ Clave correcta. Ya puedes registrar tu asistencia.');
+                                                        setClaveValidada(true);
+                                                    } else {
+                                                        toast.error('❌ Clave incorrecta.');
+                                                    }
+                                                }}
+                                            >
+                                                Validar clave
+                                            </button>
                                         </div>
                                     ) : (
-                                        <div className="mt-4">
-                                            <p className="fw-semibold">Registrar asistencia con QR:</p>
-
-                                            {!mostrarEscaner ? (
-                                                <button
-                                                    className="btn btn-outline-primary"
-                                                    onClick={() => setMostrarEscaner(true)}
-                                                >
-                                                    Activar escáner
-                                                </button>
-                                            ) : (
-                                                <EscanearQR
+                                        !asistenciaVerificada ? (
+                                            <p className="text-muted">Verificando asistencia...</p>
+                                        ) : asistenciaRegistrada ? (
+                                            <div className="alert alert-success mt-4" role="alert">
+                                                ✅ Su asistencia ya ha sido registrada.
+                                            </div>
+                                        ) : (
+                                            <div className="mt-4">
+                                                <p className="fw-semibold">Registrar asistencia con QR:</p>
+                                                {!mostrarEscaner ? (
+                                                    <button
+                                                        className="btn btn-outline-primary"
+                                                        onClick={() => setMostrarEscaner(true)}
+                                                    >
+                                                        Activar escáner
+                                                    </button>
+                                                ) : (
+                                                    <EscanearQR
+                                                        usuarioId={usuarioId}
+                                                        deshabilitado={false}
+                                                        onAsistenciaRegistrada={() => {
+                                                            setAsistenciaRegistrada(true);
+                                                            setMostrarEscaner(false);
+                                                            setRefresco((prev) => prev + 1);
+                                                        }}
+                                                    />
+                                                )}
+                                                <SubirQR
                                                     usuarioId={usuarioId}
-                                                    deshabilitado={false}
                                                     onAsistenciaRegistrada={() => {
                                                         setAsistenciaRegistrada(true);
-                                                        setMostrarEscaner(false);
                                                         setRefresco((prev) => prev + 1);
                                                     }}
                                                 />
-                                            )}
-                                            <SubirQR
-                                                usuarioId={usuarioId}
-                                                onAsistenciaRegistrada={() => {
-                                                    setAsistenciaRegistrada(true);
-                                                    setRefresco((prev) => prev + 1);
-                                                }}
-                                            />
-                                        </div>
+                                            </div>
+                                        )
                                     )
                                 ) : (
                                     <div className="alert alert-info mt-3" role="alert">
-                                        🕒 El evento no esta en curso.
+                                        🕒 El evento no está en curso.
                                     </div>
                                 )}
 
@@ -760,7 +787,6 @@ const DetalleEvento = () => {
                                         <GenerarQR eventoId={evento.id} usuarioId={usuarioId}/>
                                     </div>
                                 )}
-
                             </div>
                         )}
 

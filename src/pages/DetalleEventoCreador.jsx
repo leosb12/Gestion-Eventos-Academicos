@@ -637,24 +637,26 @@ const DetalleEventoCreador = () => {
 
 
                         )}
-                        <div className="mt-5 text-start bg-white border rounded-4 shadow-sm p-4"
-                             style={{maxWidth: '360px'}}>
-                            <h5 className="fw-bold mb-3">📲 Comparte este QR para que los participantes marquen
-                                asistencia</h5>
-                            <div className="d-flex justify-content-center">
-                                <img
-                                    src={`https://api.qrserver.com/v1/create-qr-code/?data=https://tu-app.com/asistencia/${evento.id}&size=200x200`}
-                                    alt="QR de asistencia"
-                                    className="img-fluid"
-                                    style={{maxWidth: '200px'}}
-                                />
-                            </div>
-                            <p className="text-muted mt-3">Los participantes pueden escanear este código para registrar
-                                su asistencia al evento.</p>
-                        </div>
+
 
                     </>
+
                 )}
+                <div className="mt-5 text-start bg-white border rounded-4 shadow-sm p-4"
+                     style={{maxWidth: '360px'}}>
+                    <h5 className="fw-bold mb-3">📲 Comparte este QR para que los participantes marquen
+                        asistencia</h5>
+                    <div className="d-flex justify-content-center">
+                        <img
+                            src={`https://api.qrserver.com/v1/create-qr-code/?data=https://tu-app.com/asistencia/${evento.id}&size=200x200`}
+                            alt="QR de asistencia"
+                            className="img-fluid"
+                            style={{maxWidth: '200px'}}
+                        />
+                    </div>
+                    <p className="text-muted mt-3">Los participantes pueden escanear este código para registrar
+                        su asistencia al evento.</p>
+                </div>
             </div>
             <ToastContainer position="top-right" autoClose={3000} hideProgressBar/>
 
