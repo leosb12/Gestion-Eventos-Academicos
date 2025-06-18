@@ -27,21 +27,21 @@ const DetalleEventoCreador = () => {
     const [mentorPorEquipo, setMentorPorEquipo] = useState({});
 
     useEffect(() => {
-    // Cargar todos los usuarios tipo mentor (id_tipo_usuario = 8)
+        // Cargar todos los usuarios tipo mentor (id_tipo_usuario = 8)
         supabase
-          .from('usuario')
-          .select('id, nombre')
-          .eq('id_tipo_usuario', 8)
-          .then(({ data }) => setMentores(data || []));
+            .from('usuario')
+            .select('id, nombre')
+            .eq('id_tipo_usuario', 8)
+            .then(({data}) => setMentores(data || []));
     }, []);
 
     useEffect(() => {
         // carga todos los usuarios tipo tribunal (id_tipo_usuario = 3)
-       supabase
-         .from('usuario')
-         .select('id, nombre')
-         .eq('id_tipo_usuario', 3)
-         .then(({ data }) => setTribunales(data || []));
+        supabase
+            .from('usuario')
+            .select('id, nombre')
+            .eq('id_tipo_usuario', 3)
+            .then(({data}) => setTribunales(data || []));
     }, []);
 
     useEffect(() => {
@@ -87,10 +87,10 @@ const DetalleEventoCreador = () => {
     useEffect(() => {
         // Cargar todos los usuarios tipo mentor (id_tipo_usuario = 8)
         supabase
-          .from('usuario')
-          .select('id, nombre')
-          .eq('id_tipo_usuario', 8)
-          .then(({ data }) => setMentores(data || []));
+            .from('usuario')
+            .select('id, nombre')
+            .eq('id_tipo_usuario', 8)
+            .then(({data}) => setMentores(data || []));
     }, []);
 
     useEffect(() => {
@@ -173,30 +173,30 @@ const DetalleEventoCreador = () => {
     }, [evento]);
 
     useEffect(() => {
-      if (!equipos.length) return;
+        if (!equipos.length) return;
 
-      const fetchTribunalesAsignados = async () => {
-        const { data: asignaciones, error } = await supabase
-          .from('tribunal')
-          .select('id_proyecto, id_usuario');
+        const fetchTribunalesAsignados = async () => {
+            const {data: asignaciones, error} = await supabase
+                .from('tribunal')
+                .select('id_proyecto, id_usuario');
 
-        if (error) {
-          console.error('Error cargando asignaciones de tribunal:', error);
-          return;
-        }
+            if (error) {
+                console.error('Error cargando asignaciones de tribunal:', error);
+                return;
+            }
 
-        // mapeo equipo.id → tribunalId
-        const mapping = {};
-        asignaciones.forEach(({ id_proyecto, id_usuario }) => {
-          // buscamos qué equipo tiene este proyecto
-          const equipo = equipos.find(e => e.proyecto?.id === id_proyecto);
-          if (equipo) mapping[equipo.id] = id_usuario;
-        });
+            // mapeo equipo.id → tribunalId
+            const mapping = {};
+            asignaciones.forEach(({id_proyecto, id_usuario}) => {
+                // buscamos qué equipo tiene este proyecto
+                const equipo = equipos.find(e => e.proyecto?.id === id_proyecto);
+                if (equipo) mapping[equipo.id] = id_usuario;
+            });
 
-        setTribunalPorEquipo(mapping);
-      };
+            setTribunalPorEquipo(mapping);
+        };
 
-      fetchTribunalesAsignados();
+        fetchTribunalesAsignados();
     }, [equipos]);
     const eliminarEvento = async () => {
         const confirmar = window.confirm('¿Estás seguro de eliminar este evento?');
@@ -248,24 +248,24 @@ const DetalleEventoCreador = () => {
             toast.error('Error al guardar cambios');
         }
 
-      for (const [equipoId, tribunalId] of Object.entries(tribunalPorEquipo)) {
-        if (!tribunalId) continue;
-        const proyectoId = equipos.find(e => e.id === +equipoId).proyecto.id;
-        const { error: tribunalError } = await supabase
-          .from('tribunal')
-          .upsert(
-            { id_proyecto: proyectoId, id_usuario: tribunalId },
-            { onConflict: ['id_proyecto'] }
-          );
-        if (tribunalError) {
-          toast.error(`Error al asignar tribunal al grupo ${equipoId}`);
-          return;
+        for (const [equipoId, tribunalId] of Object.entries(tribunalPorEquipo)) {
+            if (!tribunalId) continue;
+            const proyectoId = equipos.find(e => e.id === +equipoId).proyecto.id;
+            const {error: tribunalError} = await supabase
+                .from('tribunal')
+                .upsert(
+                    {id_proyecto: proyectoId, id_usuario: tribunalId},
+                    {onConflict: ['id_proyecto']}
+                );
+            if (tribunalError) {
+                toast.error(`Error al asignar tribunal al grupo ${equipoId}`);
+                return;
+            }
         }
-      }
         for (const [equipoId, mentorId] of Object.entries(mentorPorEquipo)) {
-            const { error: mentorError } = await supabase
+            const {error: mentorError} = await supabase
                 .from('equipo')
-                .update({ mentor_id: mentorId })
+                .update({mentor_id: mentorId})
                 .eq('id', equipoId);
 
             if (mentorError) {
@@ -278,7 +278,6 @@ const DetalleEventoCreador = () => {
         toast.success('Cambios guardados');
         setEvento({...evento, ...form, imagen_url: nuevaURL});
         setEditando(false);
-
 
 
     };
@@ -487,110 +486,112 @@ const DetalleEventoCreador = () => {
                                                     </div>
                                                 </div>
                                                 <div className="accordion my-2" id={`subAccordionTribunal${equipo.id}`}>
-                                                  <div className="accordion-item">
-                                                    <h2 className="accordion-header">
-                                                      <button
-                                                        className={`accordion-button collapsed bg-light fw-semibold`}
-                                                        type="button"
-                                                        onClick={() =>
-                                                          setSubSeccionesAbiertas(prev => ({
-                                                            ...prev,
-                                                            [equipo.id]: {
-                                                              ...(prev[equipo.id] || {}),
-                                                              tribunal: !prev[equipo.id]?.tribunal
-                                                            }
-                                                          }))
-                                                        }>
-                                                        👨‍⚖️ Tribunal
-                                                      </button>
-                                                    </h2>
-                                                    <div
-                                                      className={`accordion-collapse collapse ${subSeccionesAbiertas[equipo.id]?.tribunal ? 'show' : ''}`}>
-                                                      <div className="accordion-body">
-                                                        {editando ? (
-                                                          <>
-                                                            <label className="form-label">Asignar Tribunal:</label>
-                                                            <select
-                                                              className="form-select mb-3"
-                                                              value={tribunalPorEquipo[equipo.id] ?? ''}
-                                                              onChange={e =>
-                                                                setTribunalPorEquipo(prev => ({
-                                                                  ...prev,
-                                                                  [equipo.id]: +e.target.value
-                                                                }))
-                                                              }
-                                                            >
-                                                              <option value="">— No asignado —</option>
-                                                              {tribunales.map(t => (
-                                                                <option key={t.id} value={t.id}>
-                                                                  {t.nombre}
-                                                                </option>
-                                                              ))}
-                                                            </select>
-                                                          </>
-                                                        ) : (
-                                                          <p className="mb-0">
-                                                            {tribunalPorEquipo[equipo.id]
-                                                              ? tribunales.find(t => t.id === tribunalPorEquipo[equipo.id])?.nombre
-                                                              : '— No asignado —'}
-                                                          </p>
-                                                        )}
-                                                      </div>
+                                                    <div className="accordion-item">
+                                                        <h2 className="accordion-header">
+                                                            <button
+                                                                className={`accordion-button collapsed bg-light fw-semibold`}
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setSubSeccionesAbiertas(prev => ({
+                                                                        ...prev,
+                                                                        [equipo.id]: {
+                                                                            ...(prev[equipo.id] || {}),
+                                                                            tribunal: !prev[equipo.id]?.tribunal
+                                                                        }
+                                                                    }))
+                                                                }>
+                                                                👨‍⚖️ Tribunal
+                                                            </button>
+                                                        </h2>
+                                                        <div
+                                                            className={`accordion-collapse collapse ${subSeccionesAbiertas[equipo.id]?.tribunal ? 'show' : ''}`}>
+                                                            <div className="accordion-body">
+                                                                {editando ? (
+                                                                    <>
+                                                                        <label className="form-label">Asignar
+                                                                            Tribunal:</label>
+                                                                        <select
+                                                                            className="form-select mb-3"
+                                                                            value={tribunalPorEquipo[equipo.id] ?? ''}
+                                                                            onChange={e =>
+                                                                                setTribunalPorEquipo(prev => ({
+                                                                                    ...prev,
+                                                                                    [equipo.id]: +e.target.value
+                                                                                }))
+                                                                            }
+                                                                        >
+                                                                            <option value="">— No asignado —</option>
+                                                                            {tribunales.map(t => (
+                                                                                <option key={t.id} value={t.id}>
+                                                                                    {t.nombre}
+                                                                                </option>
+                                                                            ))}
+                                                                        </select>
+                                                                    </>
+                                                                ) : (
+                                                                    <p className="mb-0">
+                                                                        {tribunalPorEquipo[equipo.id]
+                                                                            ? tribunales.find(t => t.id === tribunalPorEquipo[equipo.id])?.nombre
+                                                                            : '— No asignado —'}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                  </div>
                                                 </div>
                                                 <div className="accordion my-2" id={`subAccordionMentor${equipo.id}`}>
-                                                  <div className="accordion-item">
-                                                    <h2 className="accordion-header">
-                                                      <button
-                                                        className={`accordion-button collapsed bg-light fw-semibold`}
-                                                        type="button"
-                                                        onClick={() =>
-                                                          setSubSeccionesAbiertas(prev => ({
-                                                            ...prev,
-                                                            [equipo.id]: {
-                                                              ...(prev[equipo.id] || {}),
-                                                              mentor: !prev[equipo.id]?.mentor
-                                                            }
-                                                          }))
-                                                        }>
-                                                        🧑‍🏫 Mentor
-                                                      </button>
-                                                    </h2>
-                                                    <div
-                                                      className={`accordion-collapse collapse ${subSeccionesAbiertas[equipo.id]?.mentor ? 'show' : ''}`}>
-                                                      <div className="accordion-body">
-                                                        {editando ? (
-                                                          <>
-                                                            <label className="form-label">Asignar Mentor:</label>
-                                                            <select
-                                                              className="form-select mb-3"
-                                                              value={mentorPorEquipo[equipo.id] ?? ''}
-                                                              onChange={e =>
-                                                                setMentorPorEquipo(prev => ({
-                                                                  ...prev,
-                                                                  [equipo.id]: e.target.value ? parseInt(e.target.value) : null
-                                                                }))
-                                                              }
-                                                            >
-                                                              <option value="">— No asignado —</option>
-                                                              {mentores.map(m => (
-                                                                <option key={m.id} value={m.id}>
-                                                                  {m.nombre}
-                                                                </option>
-                                                              ))}
-                                                            </select>
-                                                          </>
-                                                        ) : (
-                                                          <p className="mb-0">
-                                                            {mentorPorEquipo[equipo.id]
-                                                              ? mentores.find(m => m.id === mentorPorEquipo[equipo.id])?.nombre
-                                                              : '— No asignado —'}
-                                                          </p>
-                                                        )}
-                                                      </div>
+                                                    <div className="accordion-item">
+                                                        <h2 className="accordion-header">
+                                                            <button
+                                                                className={`accordion-button collapsed bg-light fw-semibold`}
+                                                                type="button"
+                                                                onClick={() =>
+                                                                    setSubSeccionesAbiertas(prev => ({
+                                                                        ...prev,
+                                                                        [equipo.id]: {
+                                                                            ...(prev[equipo.id] || {}),
+                                                                            mentor: !prev[equipo.id]?.mentor
+                                                                        }
+                                                                    }))
+                                                                }>
+                                                                🧑‍🏫 Mentor
+                                                            </button>
+                                                        </h2>
+                                                        <div
+                                                            className={`accordion-collapse collapse ${subSeccionesAbiertas[equipo.id]?.mentor ? 'show' : ''}`}>
+                                                            <div className="accordion-body">
+                                                                {editando ? (
+                                                                    <>
+                                                                        <label className="form-label">Asignar
+                                                                            Mentor:</label>
+                                                                        <select
+                                                                            className="form-select mb-3"
+                                                                            value={mentorPorEquipo[equipo.id] ?? ''}
+                                                                            onChange={e =>
+                                                                                setMentorPorEquipo(prev => ({
+                                                                                    ...prev,
+                                                                                    [equipo.id]: e.target.value ? parseInt(e.target.value) : null
+                                                                                }))
+                                                                            }
+                                                                        >
+                                                                            <option value="">— No asignado —</option>
+                                                                            {mentores.map(m => (
+                                                                                <option key={m.id} value={m.id}>
+                                                                                    {m.nombre}
+                                                                                </option>
+                                                                            ))}
+                                                                        </select>
+                                                                    </>
+                                                                ) : (
+                                                                    <p className="mb-0">
+                                                                        {mentorPorEquipo[equipo.id]
+                                                                            ? mentores.find(m => m.id === mentorPorEquipo[equipo.id])?.nombre
+                                                                            : '— No asignado —'}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                  </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -633,12 +634,32 @@ const DetalleEventoCreador = () => {
                                     </tbody>
                                 </table>
                             </div>
+
+
                         )}
+                        <div className="mt-5 text-start bg-white border rounded-4 shadow-sm p-4"
+                             style={{maxWidth: '360px'}}>
+                            <h5 className="fw-bold mb-3">📲 Comparte este QR para que los participantes marquen
+                                asistencia</h5>
+                            <div className="d-flex justify-content-center">
+                                <img
+                                    src={`https://api.qrserver.com/v1/create-qr-code/?data=https://tu-app.com/asistencia/${evento.id}&size=200x200`}
+                                    alt="QR de asistencia"
+                                    className="img-fluid"
+                                    style={{maxWidth: '200px'}}
+                                />
+                            </div>
+                            <p className="text-muted mt-3">Los participantes pueden escanear este código para registrar
+                                su asistencia al evento.</p>
+                        </div>
+
                     </>
                 )}
             </div>
             <ToastContainer position="top-right" autoClose={3000} hideProgressBar/>
+
         </>
+
     );
 };
 

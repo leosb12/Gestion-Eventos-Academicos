@@ -710,47 +710,50 @@ const DetalleEvento = () => {
                         {estaInscrito && (
                             <div className="bg-white p-4 mt-4 mb-3 rounded-4 shadow-sm border d-inline-block">
                                 <h5 className="fw-bold mb-3">Registro de Asistencia</h5>
-                                {evento?.id_estado === 4 && (
-                                    <>
-                                        {!asistenciaVerificada ? (
-                                            <p className="text-muted">Verificando asistencia...</p>
-                                        ) : asistenciaRegistrada ? (
-                                            <div className="alert alert-success mt-4" role="alert">
-                                                ✅ Su asistencia ya ha sido registrada.
-                                            </div>
-                                        ) : (
-                                            <div className="mt-4">
-                                                <p className="fw-semibold">Registrar asistencia con QR:</p>
+                                {evento?.id_estado === 4 ? (
+                                    !asistenciaVerificada ? (
+                                        <p className="text-muted">Verificando asistencia...</p>
+                                    ) : asistenciaRegistrada ? (
+                                        <div className="alert alert-success mt-4" role="alert">
+                                            ✅ Su asistencia ya ha sido registrada.
+                                        </div>
+                                    ) : (
+                                        <div className="mt-4">
+                                            <p className="fw-semibold">Registrar asistencia con QR:</p>
 
-                                                {!mostrarEscaner ? (
-                                                    <button
-                                                        className="btn btn-outline-primary"
-                                                        onClick={() => setMostrarEscaner(true)}
-                                                    >
-                                                        Activar escáner
-                                                    </button>
-                                                ) : (
-                                                    <EscanearQR
-                                                        usuarioId={usuarioId}
-                                                        deshabilitado={false}
-                                                        onAsistenciaRegistrada={() => {
-                                                            setAsistenciaRegistrada(true);
-                                                            setMostrarEscaner(false);
-                                                            setRefresco((prev) => prev + 1);
-                                                        }}
-                                                    />
-                                                )}
-                                                <SubirQR
+                                            {!mostrarEscaner ? (
+                                                <button
+                                                    className="btn btn-outline-primary"
+                                                    onClick={() => setMostrarEscaner(true)}
+                                                >
+                                                    Activar escáner
+                                                </button>
+                                            ) : (
+                                                <EscanearQR
                                                     usuarioId={usuarioId}
+                                                    deshabilitado={false}
                                                     onAsistenciaRegistrada={() => {
                                                         setAsistenciaRegistrada(true);
+                                                        setMostrarEscaner(false);
                                                         setRefresco((prev) => prev + 1);
                                                     }}
                                                 />
-                                            </div>
-                                        )}
-                                    </>
+                                            )}
+                                            <SubirQR
+                                                usuarioId={usuarioId}
+                                                onAsistenciaRegistrada={() => {
+                                                    setAsistenciaRegistrada(true);
+                                                    setRefresco((prev) => prev + 1);
+                                                }}
+                                            />
+                                        </div>
+                                    )
+                                ) : (
+                                    <div className="alert alert-info mt-3" role="alert">
+                                        🕒 El evento no esta en curso.
+                                    </div>
                                 )}
+
                                 {(tipoUsuario === 6 || tipoUsuario === 7) && evento?.id_estado === 4 && (
                                     <div className="mt-4 p-3 bg-light border rounded-4 shadow-sm">
                                         <h5 className="fw-bold mb-2">📲 QR para registrar asistencia</h5>
