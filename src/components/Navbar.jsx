@@ -115,7 +115,7 @@ export default function Navbar() {
                                 <li>
                                     <NavLink
                                         to="/calendario-eventos"
-                                        className={({ isActive }) => `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`}
+                                        className={({isActive}) => `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`}
                                     >
                                         Calendario de Eventos
                                     </NavLink>
@@ -274,16 +274,16 @@ export default function Navbar() {
                                                         </li>
                                                     )}
                                                     {tipoUsuario === 7 && (
-                                                      <li>
-                                                        <NavLink
-                                                          to="/gestionar-notificaciones"
-                                                          className={({ isActive }) =>
-                                                            `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
-                                                          }
-                                                        >
-                                                          Gestionar Notificaciones
-                                                        </NavLink>
-                                                      </li>
+                                                        <li>
+                                                            <NavLink
+                                                                to="/gestionar-notificaciones"
+                                                                className={({isActive}) =>
+                                                                    `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                                                                }
+                                                            >
+                                                                Gestionar Notificaciones
+                                                            </NavLink>
+                                                        </li>
                                                     )}
                                                     {(tipoUsuario === 6 || tipoUsuario === 7) && (
                                                         <li>
@@ -315,19 +315,74 @@ export default function Navbar() {
                                     data-bs-toggle="dropdown"
                                     aria-expanded="false"
                                 >
-                                    Equipos y Proyectos
+                                    Gestionar Equipos y Proyectos
                                 </a>
                                 <ul className="dropdown-menu bg-primary border-0 shadow-none">
-                                    <li>
-                                        <NavLink
-                                            to="/gestionar-equipos"
-                                            className={({isActive}) =>
-                                                `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
-                                            }
+
+                                    {/* Submenú de Gestión de Equipos */}
+                                    <li className="dropdown-submenu">
+                                        <button
+                                            type="button"
+                                            className="dropdown-item text-white"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSubmenuGestionAbierto(!submenuGestionAbierto);
+                                            }}
+                                            style={{
+                                                width: '100%',
+                                                textAlign: 'left',
+                                                background: 'none',
+                                                border: 'none'
+                                            }}
                                         >
-                                            Gestionar Equipos
-                                        </NavLink>
+                                            Gestionar Equipos ▼
+                                        </button>
+                                        {submenuGestionAbierto && (
+                                            <ul className="dropdown-menu show" style={{
+                                                position: 'relative',
+                                                background: 'transparent',
+                                                border: 'none',
+                                                boxShadow: 'none'
+                                            }}>
+                                                <li>
+                                                    <NavLink
+                                                        to="/gestionar-equipos"
+                                                        className={({isActive}) =>
+                                                            `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                                                        }
+                                                    >
+                                                        Gestionar Equipos
+                                                    </NavLink>
+                                                </li>
+                                                {[6, 7].includes(tipoUsuario) && (
+                                                    <li>
+                                                        <NavLink
+                                                            to="/asignar-tribunal"
+                                                            className={({isActive}) =>
+                                                                `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                                                            }
+                                                        >
+                                                            Asignar Tribunal
+                                                        </NavLink>
+                                                    </li>
+                                                )}
+                                                {[6, 7].includes(tipoUsuario) && (
+                                                    <li>
+                                                        <NavLink
+                                                            to="/asignar-mentor"
+                                                            className={({isActive}) =>
+                                                                `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                                                            }
+                                                        >
+                                                            Asignar Mentor
+                                                        </NavLink>
+                                                    </li>
+                                                )}
+                                            </ul>
+                                        )}
                                     </li>
+
+                                    {/* Link directo a Gestionar Proyectos */}
                                     <li>
                                         <NavLink
                                             to="/gestionar-proyectos"
@@ -338,33 +393,6 @@ export default function Navbar() {
                                             Gestionar Proyectos
                                         </NavLink>
                                     </li>
-
-                                    {[6, 7].includes(tipoUsuario) && (
-                                        <li>
-                                            <NavLink
-                                                to="/asignar-tribunal"
-                                                className={({isActive}) =>
-                                                    `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
-                                                }
-                                            >
-                                                Asignar Tribunal
-                                            </NavLink>
-                                        </li>
-                                    )}
-
-                                    {[6, 7].includes(tipoUsuario) && (
-                                        <li>
-                                            <NavLink
-                                                to="/asignar-mentor"
-                                                className={({isActive}) =>
-                                                    `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
-                                                }
-                                            >
-                                                Asignar Mentor
-                                            </NavLink>
-                                        </li>
-                                    )}
-
                                 </ul>
                             </li>
                         )}
