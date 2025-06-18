@@ -155,12 +155,11 @@ const DefinirProyecto = () => {
             if (proyectoError) throw proyectoError;
 
             toast.success('Proyecto definido e inscrito correctamente.');
-            setTimeout(() => navigate('/'), 3000);
+            setLoading(true);
+            setTimeout(() => navigate('/'), 2000);
         } catch (err) {
             toast.error('Error al guardar el proyecto.');
             console.error(err);
-        } finally {
-            setLoading(false);
         }
     };
 

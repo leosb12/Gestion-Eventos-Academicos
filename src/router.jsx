@@ -31,7 +31,7 @@ import GestionarProyectos from './pages/GestionarProyectos';
 import GestionarNotificaciones from "./pages/GestionarNotificaciones.jsx";
 import CertificadosEventos from "./pages/CertificadosEventos.jsx";
 import CalendarioEventos from './pages/CalendarioEventos';
-
+import GestionarEquipos from './pages/GestionarEquipos';
 
 
 export const router = createBrowserRouter([
@@ -89,6 +89,16 @@ export const router = createBrowserRouter([
                         <CrearEvento/>
                     </PrivateRoute>
                 )
+            },
+
+            {
+                path: "gestionar-equipos",
+                element: (
+                    <PrivateRoute>
+                        <GestionarEquipos/>
+                    </PrivateRoute>
+                )
+
             },
             {
                 path: "gestionar-eventos",
@@ -239,7 +249,7 @@ export const router = createBrowserRouter([
                 path: "enviar-certificados",
                 element: (
                     <PrivateRoute>
-                        <CertificadosEventos />
+                        <CertificadosEventos/>
                     </PrivateRoute>
                 )
             },
@@ -247,7 +257,7 @@ export const router = createBrowserRouter([
                 path: "calendario-eventos",
                 element: (
                     <PrivateRoute>
-                        <CalendarioEventos />
+                        <CalendarioEventos/>
                     </PrivateRoute>
                 )
             }
