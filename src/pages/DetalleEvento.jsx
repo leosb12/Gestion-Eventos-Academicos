@@ -33,6 +33,8 @@ const DetalleEvento = () => {
     const [mostrarEscaner, setMostrarEscaner] = useState(false);
     const [asistenciaVerificada, setAsistenciaVerificada] = useState(false);
     const [mentorNombre, setMentorNombre] = useState(null);
+    const [claveIngresada, setClaveIngresada] = useState('');
+    const [claveValidada, setClaveValidada] = useState(false);
 
     useEffect(() => {
         fetchEvento()
@@ -710,9 +712,33 @@ const DetalleEvento = () => {
                         {estaInscrito && (
                             <div className="bg-white p-4 mt-4 mb-3 rounded-4 shadow-sm border d-inline-block">
                                 <h5 className="fw-bold mb-3">Registro de Asistencia</h5>
-                                {evento?.id_estado === 4 && (
-                                    <>
-                                        {!asistenciaVerificada ? (
+                                {evento?.id_estado === 4 ? (
+                                    evento.id_tevento === 4 && !claveValidada ? (
+                                        <div>
+                                            <label className="form-label fw-semibold">🔐 Ingresar clave de
+                                                asistencia:</label>
+                                            <input
+                                                type="password"
+                                                className="form-control mb-2"
+                                                value={claveIngresada}
+                                                onChange={(e) => setClaveIngresada(e.target.value)}
+                                            />
+                                            <button
+                                                className="btn btn-primary"
+                                                onClick={() => {
+                                                    if (claveIngresada.trim() === evento.clave_asistencia) {
+                                                        toast.success('✅ Clave correcta. Ya puedes registrar tu asistencia.');
+                                                        setClaveValidada(true);
+                                                    } else {
+                                                        toast.error('❌ Clave incorrecta.');
+                                                    }
+                                                }}
+                                            >
+                                                Validar clave
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        !asistenciaVerificada ? (
                                             <p className="text-muted">Verificando asistencia...</p>
                                         ) : asistenciaRegistrada ? (
                                             <div className="alert alert-success mt-4" role="alert">
@@ -721,7 +747,6 @@ const DetalleEvento = () => {
                                         ) : (
                                             <div className="mt-4">
                                                 <p className="fw-semibold">Registrar asistencia con QR:</p>
-
                                                 {!mostrarEscaner ? (
                                                     <button
                                                         className="btn btn-outline-primary"
@@ -748,16 +773,20 @@ const DetalleEvento = () => {
                                                     }}
                                                 />
                                             </div>
-                                        )}
-                                    </>
+                                        )
+                                    )
+                                ) : (
+                                    <div className="alert alert-info mt-3" role="alert">
+                                        🕒 El evento no está en curso.
+                                    </div>
                                 )}
+
                                 {(tipoUsuario === 6 || tipoUsuario === 7) && evento?.id_estado === 4 && (
                                     <div className="mt-4 p-3 bg-light border rounded-4 shadow-sm">
                                         <h5 className="fw-bold mb-2">📲 QR para registrar asistencia</h5>
                                         <GenerarQR eventoId={evento.id} usuarioId={usuarioId}/>
                                     </div>
                                 )}
-
                             </div>
                         )}
 

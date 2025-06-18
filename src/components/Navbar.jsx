@@ -315,7 +315,7 @@ export default function Navbar() {
                                     data-bs-toggle="dropdown"
                                     aria-expanded="false"
                                 >
-                                    Gestionar Equipos y Proyectos
+                                    Equipos y Proyectos
                                 </a>
                                 <ul className="dropdown-menu bg-primary border-0 shadow-none">
 
