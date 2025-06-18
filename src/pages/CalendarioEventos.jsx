@@ -19,6 +19,7 @@ const diasMap = {
 
 export default function CalendarioEventos() {
   const [eventos, setEventos] = useState([]);
+  const [proximos, setProximos] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,7 +37,9 @@ export default function CalendarioEventos() {
         return;
       }
 
+      const hoy = new Date();
       const eventosExpandido = [];
+      const proximosRaw = [];
 
       for (const evento of eventosData) {
         const inicio = new Date(evento.fechainicio);
@@ -59,6 +62,16 @@ export default function CalendarioEventos() {
                   eventoId: evento.id
                 }
               });
+
+              if (actual >= hoy) {
+                proximosRaw.push({
+                  id: evento.id,
+                  nombre: evento.nombre,
+                  fecha: fechaISO,
+                  horaInicio,
+                  horaFin
+                });
+              }
             }
             actual.setDate(actual.getDate() + 1);
           }
@@ -66,6 +79,7 @@ export default function CalendarioEventos() {
       }
 
       setEventos(eventosExpandido);
+      setProximos(proximosRaw.sort((a, b) => new Date(a.fecha) - new Date(b.fecha)).slice(0, 5));
     };
 
     fetchEventos();
@@ -76,26 +90,57 @@ export default function CalendarioEventos() {
       <Navbar />
       <div className="container mt-4">
         <h2 className="fw-bold mb-3">📅 Calendario de Eventos</h2>
-        <FullCalendar
-          plugins={[dayGridPlugin, interactionPlugin]}
-          initialView="dayGridMonth"
-          locale={esLocale}
-          events={eventos}
-          height="auto"
-          eventContent={(arg) => {
-            const [nombre, horario] = arg.event.title.split("\n");
-            return (
-              <div style={{ whiteSpace: 'pre-line', fontSize: "0.85em" }}>
-                <strong>{nombre}</strong>
-                <div>{horario}</div>
+        <p className="text-muted mb-3" style={{ marginTop: "-8px" }}>
+            Haz clic sobre un evento para ver más detalles.
+        </p>
+
+        <div className="row">
+          <div className="col-md-8">
+            <FullCalendar
+              plugins={[dayGridPlugin, interactionPlugin]}
+              initialView="dayGridMonth"
+              locale={esLocale}
+              events={eventos}
+              height="auto"
+              eventContent={(arg) => {
+                const [nombre, horario] = arg.event.title.split("\n");
+                return (
+                  <div style={{ whiteSpace: 'pre-line', fontSize: "0.85em" }}>
+                    <strong>{nombre}</strong>
+                    <div>{horario}</div>
+                  </div>
+                );
+              }}
+              eventClick={(info) => {
+                const id = info.event.extendedProps.eventoId;
+                if (id) navigate(`/evento/${id}`);
+              }}
+            />
+          </div>
+          <div className="col-md-4">
+            <div className="card">
+              <div className="card-body">
+                <h5 className="card-title fw-bold">📌 Próximos Eventos</h5>
+                {proximos.length === 0 && <p className="text-muted">No hay eventos próximos.</p>}
+                {proximos.map((ev, index) => (
+                  <div key={index} className="card border mb-3">
+                    <div className="card-body">
+                      <h6 className="card-title fw-bold">{ev.nombre}</h6>
+                      <p className="mb-1"><i className="bi bi-calendar-event" /> {ev.fecha}</p>
+                      <p className="mb-1"><i className="bi bi-clock" /> {ev.horaInicio} – {ev.horaFin}</p>
+                      <button
+                        className="btn btn-dark btn-sm mt-2"
+                        onClick={() => navigate(`/evento/${ev.id}`)}
+                      >
+                        Ver Detalles
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            );
-          }}
-          eventClick={(info) => {
-            const id = info.event.extendedProps.eventoId;
-            if (id) navigate(`/evento/${id}`);
-          }}
-        />
+            </div>
+          </div>
+        </div>
       </div>
     </>
   );
