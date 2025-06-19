@@ -6,7 +6,6 @@ import {toast} from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import {ToastContainer} from 'react-toastify';
 
-
 const DetalleEventoCreador = () => {
     const {id} = useParams();
     const navigate = useNavigate();
@@ -25,6 +24,9 @@ const DetalleEventoCreador = () => {
     const [tribunalPorEquipo, setTribunalPorEquipo] = useState({});
     const [mentores, setMentores] = useState([]);
     const [mentorPorEquipo, setMentorPorEquipo] = useState({});
+    const [rankingPorMateria, setRankingPorMateria] = useState({});
+    const [materias, setMaterias] = useState([]);
+    const [rankingPublicado, setRankingPublicado] = useState(false);
 
     useEffect(() => {
         // Cargar todos los usuarios tipo mentor (id_tipo_usuario = 8)
@@ -46,40 +48,54 @@ const DetalleEventoCreador = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            const {data: authUser} = await supabase.auth.getUser();
-            const correo = authUser?.user?.email;
-            if (!correo) return navigate('/');
+  const {data: authUser} = await supabase.auth.getUser();
+  const correo = authUser?.user?.email;
+  if (!correo) return navigate('/');
 
-            const {data: usuario} = await supabase
-                .from('usuario')
-                .select('id')
-                .eq('correo', correo)
-                .maybeSingle();
+  const {data: usuario} = await supabase
+    .from('usuario')
+    .select('id')
+    .eq('correo', correo)
+    .maybeSingle();
 
-            if (!usuario) return navigate('/');
-            setUsuarioId(usuario.id);
+  if (!usuario) return navigate('/');
+  setUsuarioId(usuario.id);
 
-            const [{data: eventoData, error: eventoError}, {data: estadosData}] = await Promise.all([
-                supabase.from('evento').select('*').eq('id', id).maybeSingle(),
-                supabase.from('estado').select('*')
-            ]);
+  const [{data: eventoData, error: eventoError}, {data: estadosData}] = await Promise.all([
+    supabase.from('evento').select('*').eq('id', id).maybeSingle(),
+    supabase.from('estado').select('*')
+  ]);
 
-            if (eventoError || !eventoData || eventoData.id_usuario_creador !== usuario.id) {
-                toast.error('No tienes permiso para ver este evento');
-                return navigate('/');
-            }
+  if (eventoError || !eventoData || eventoData.id_usuario_creador !== usuario.id) {
+    toast.error('No tienes permiso para ver este evento');
+    return navigate('/');
+  }
 
-            setEvento(eventoData);
-            setEstados(estadosData || []);
-            setForm({
-                nombre: eventoData.nombre,
-                descripcion: eventoData.descripcion,
-                fechainicio: eventoData.fechainicio,
-                fechafin: eventoData.fechafin,
-                nuevaImagen: null
-            });
-            setLoading(false);
-        };
+  setEvento(eventoData);
+  setEstados(estadosData || []);
+  setForm({
+    nombre: eventoData.nombre,
+    descripcion: eventoData.descripcion,
+    fechainicio: eventoData.fechainicio,
+    fechafin: eventoData.fechafin,
+    nuevaImagen: null
+  });
+
+  // 🔥 CORRECTO: fuera del setForm
+  const { data: rankingPub } = await supabase
+    .from('publicacion_ranking')
+    .select('*')
+    .eq('id_evento', eventoData.id)
+    .maybeSingle();
+  setRankingPublicado(!!rankingPub);
+
+  const { data: materiasData } = await supabase
+    .from('materia')
+    .select('id, nombre');
+  setMaterias(materiasData || []);
+
+  setLoading(false);
+};
 
         fetchData();
     }, [id, navigate]);
@@ -198,6 +214,36 @@ const DetalleEventoCreador = () => {
 
         fetchTribunalesAsignados();
     }, [equipos]);
+    useEffect(() => {
+  if (!evento || evento.id_estado !== 5 || (evento.id_tevento !== 2 && evento.id_tevento !== 4)) return;
+
+  const obtenerRankingAgrupado = async () => {
+    const { data: proyectos, error } = await supabase
+      .from('proyecto')
+      .select('id, nombre, id_materia, id_equipo, equipo:equipo(nombre, id_evento)')
+      .eq('id_evento', evento.id);
+
+    if (error || !proyectos) {
+      console.error('Error al obtener proyectos:', error);
+      return;
+    }
+
+    const rankingAgrupado = {};
+    for (const materia of materias) {
+      const proyectosMateria = proyectos.filter(p => p.id_materia === materia.id);
+      rankingAgrupado[materia.nombre] = proyectosMateria
+        .map(p => ({
+          ...p,
+          puntaje: Math.floor(Math.random() * 51 + 50) // Simulado
+        }))
+        .sort((a, b) => b.puntaje - a.puntaje);
+    }
+
+    setRankingPorMateria(rankingAgrupado);
+  };
+
+  obtenerRankingAgrupado();
+}, [evento, materias]);
     const eliminarEvento = async () => {
         const confirmar = window.confirm('¿Estás seguro de eliminar este evento?');
         if (!confirmar) return;
@@ -657,7 +703,81 @@ const DetalleEventoCreador = () => {
                     <p className="text-muted mt-3">Los participantes pueden escanear este código para registrar
                         su asistencia al evento.</p>
                 </div>
+                {evento.id_estado === 5 && (evento.id_tevento === 2 || evento.id_tevento === 4) && (
+    <div className="mt-5 text-start bg-white border rounded-4 shadow-sm p-4 mb-4">
+      <h4 className="fw-bold text-center mb-4">📊 Ranking del Evento</h4>
+      <div className="text-center mb-4">
+        <img
+          src={evento.imagen_url || '/noDisponible.jpg'}
+          alt="Imagen del evento"
+          className="img-fluid rounded"
+          style={{ maxHeight: '300px', objectFit: 'cover' }}
+        />
+        <p className="mt-2 fw-semibold">{evento.nombre}</p>
+      </div>
+
+      {Object.entries(rankingPorMateria).map(([materia, proyectos]) => (
+        <div key={materia} className="mb-4">
+          <h6 className="fw-semibold mb-2">📚 {materia}</h6>
+          {proyectos.length === 0 ? (
+            <p className="text-muted">No hay proyectos registrados.</p>
+          ) : (
+            <div className="table-responsive">
+              <table className="table table-sm table-bordered text-center align-middle">
+                <thead className="table-light">
+                  <tr>
+                    <th>#</th>
+                    <th>Proyecto</th>
+                    <th>Equipo</th>
+                    <th>Puntaje</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {proyectos.map((p, i) => {
+                    const rowClass =
+                      i === 0 ? 'table-warning fw-bold' :
+                      i === 1 ? 'table-secondary fw-bold' :
+                      i === 2 ? 'table-info fw-bold' : '';
+                    return (
+                      <tr key={p.id} className={rowClass}>
+                        <td>{i + 1}</td>
+                        <td>{p.nombre}</td>
+                        <td>{p.equipo?.nombre || '—'}</td>
+                        <td>{p.puntaje}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
+          )}
+        </div>
+      ))}
+
+      <div className="text-center mt-4">
+        {!rankingPublicado ? (
+          <button onClick={async () => {
+            const { error } = await supabase.from('publicacion_ranking').insert({ id_evento: evento.id });
+            if (error) toast.error("Error al publicar");
+            else {
+              toast.success("Ranking publicado");
+              setRankingPublicado(true);
+            }
+          }} className="btn btn-success">✅ Publicar ranking</button>
+        ) : (
+          <button onClick={async () => {
+            const { error } = await supabase.from('publicacion_ranking').delete().eq('id_evento', evento.id);
+            if (error) toast.error("Error al eliminar");
+            else {
+              toast.success("Publicación eliminada");
+              setRankingPublicado(false);
+            }
+          }} className="btn btn-danger">🗑 Eliminar publicación</button>
+        )}
+      </div>
+        </div>
+  )}
+           </div>
             <ToastContainer position="top-right" autoClose={3000} hideProgressBar/>
 
         </>
