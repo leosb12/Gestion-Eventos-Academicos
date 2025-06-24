@@ -32,6 +32,7 @@ import GestionarNotificaciones from "./pages/GestionarNotificaciones.jsx";
 import CertificadosEventos from "./pages/CertificadosEventos.jsx";
 import CalendarioEventos from './pages/CalendarioEventos';
 import GestionarEquipos from './pages/GestionarEquipos';
+import ResultadosRanking from './pages/ResultadosRanking.jsx';
 
 
 export const router = createBrowserRouter([
@@ -258,6 +259,14 @@ export const router = createBrowserRouter([
                 element: (
                     <PrivateRoute>
                         <CalendarioEventos/>
+                    </PrivateRoute>
+                )
+            },
+            {
+                path: "resultados-ranking",
+                element: (
+                    <PrivateRoute>
+                        <ResultadosRanking/>
                     </PrivateRoute>
                 )
             }

@@ -393,6 +393,14 @@ export default function Navbar() {
                                             Gestionar Proyectos
                                         </NavLink>
                                     </li>
+                                    <li>
+        <NavLink
+          to="/resultados-ranking"
+          className={({ isActive }) => `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`}
+        >
+          Ranking
+        </NavLink>
+      </li>
                                 </ul>
                             </li>
                         )}
