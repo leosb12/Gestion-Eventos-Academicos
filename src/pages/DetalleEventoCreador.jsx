@@ -5,6 +5,7 @@ import Navbar from '../components/Navbar';
 import {toast} from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import {ToastContainer} from 'react-toastify';
+import { Modal, Button } from 'react-bootstrap';
 
 const DetalleEventoCreador = () => {
     const {id} = useParams();
@@ -27,6 +28,11 @@ const DetalleEventoCreador = () => {
     const [rankingPorMateria, setRankingPorMateria] = useState({});
     const [materias, setMaterias] = useState([]);
     const [rankingPublicado, setRankingPublicado] = useState(false);
+    const [showPreview, setShowPreview] = useState(false);   // controla el modal
+    const [filaExpandida, setFilaExpandida] = useState({});
+    const [niveles, setNiveles]           = useState([]);   // ← catálogos Basico/Intermedio/Avanzado
+    const [nivelAbierto, setNivelAbierto] = useState({});  // controla los “dropdowns” de nivel
+
 
     useEffect(() => {
         // Cargar todos los usuarios tipo mentor (id_tipo_usuario = 8)
@@ -215,35 +221,94 @@ const DetalleEventoCreador = () => {
         fetchTribunalesAsignados();
     }, [equipos]);
     useEffect(() => {
-  if (!evento || evento.id_estado !== 5 || (evento.id_tevento !== 2 && evento.id_tevento !== 4)) return;
+  if (
+    !evento ||
+    evento.id_estado !== 5 ||
+    (evento.id_tevento !== 2 && evento.id_tevento !== 4)
+  ) return;
 
   const obtenerRankingAgrupado = async () => {
-    const { data: proyectos, error } = await supabase
-      .from('proyecto')
-      .select('id, nombre, id_materia, id_equipo, equipo:equipo(nombre, id_evento)')
-      .eq('id_evento', evento.id);
+  /* ────────── 1) Proyectos del evento ────────── */
+  const { data: proyectos, error: errProy } = await supabase
+    .from('proyecto')
+    .select(`
+      id,
+      nombre,
+      id_materia,
+      equipo!inner(
+        id,
+        nombre,
+        mentor_id,
+        id_evento
+      )
+    `)
+    .eq('equipo.id_evento', evento.id);
 
-    if (error || !proyectos) {
-      console.error('Error al obtener proyectos:', error);
-      return;
-    }
+  if (errProy) {
+    console.error(errProy);
+    toast.error('No se pudieron cargar los proyectos');
+    return;
+  }
 
-    const rankingAgrupado = {};
-    for (const materia of materias) {
-      const proyectosMateria = proyectos.filter(p => p.id_materia === materia.id);
-      rankingAgrupado[materia.nombre] = proyectosMateria
-        .map(p => ({
-          ...p,
-          puntaje: Math.floor(Math.random() * 51 + 50) // Simulado
-        }))
-        .sort((a, b) => b.puntaje - a.puntaje);
-    }
+  /* ────────── 2) Mapeo equipo  →  nivel ────────── */
+  const { data: nivelesEq, error: errNv } = await supabase
+    .from('nivelgrupo')
+    .select(`
+      id_equipo,
+      nivel: nivel ( id, nombre )
+    `)
+    .in('id_equipo', equipos.map(e => e.id));
 
-    setRankingPorMateria(rankingAgrupado);
-  };
+  if (errNv) {
+    console.error(errNv);
+    toast.error('No se pudieron cargar los niveles');
+    return;
+  }
+
+  const mapaNivel = {};                  // { idEquipo: {id, nombre} }
+  nivelesEq.forEach(n => { mapaNivel[n.id_equipo] = n.nivel; });
+
+  /* ────────── 3) Armamos Materia ➜ Nivel ➜ Proyectos ────────── */
+  const agrupado = {};                   // { materia: { nivel: [proy] } }
+
+  materias.forEach(mat => {
+    const porMateria = proyectos.filter(p => p.id_materia === mat.id);
+    if (!porMateria.length) return;
+
+    const nivelesObj = {};
+
+    porMateria.forEach(p => {
+      const nivelInfo   = mapaNivel[p.equipo.id];           // ← de la tabla puente
+      const nivelNom    = nivelInfo ? nivelInfo.nombre : 'Sin nivel';
+      const mentorNom   = mentores.find(m => m.id === p.equipo?.mentor_id)?.nombre || null;
+      const eqInfo      = equipos.find(eq => eq.id === p.equipo.id);
+      const integrantes = eqInfo ? eqInfo.miembros.map(m => m.nombre) : [];
+
+      const entry = {
+        ...p,
+        mentor:      mentorNom,
+        integrantes,
+        puntaje:     70 + Math.floor(Math.random() * 31)    // ⚠️ temporal
+      };
+
+      if (!nivelesObj[nivelNom]) nivelesObj[nivelNom] = [];
+      nivelesObj[nivelNom].push(entry);
+    });
+
+    // Ordenar ranking dentro de cada nivel
+    Object.values(nivelesObj).forEach(lista =>
+      lista.sort((a, b) => b.puntaje - a.puntaje)
+    );
+
+    agrupado[mat.nombre] = nivelesObj;
+  });
+
+  setRankingPorMateria(agrupado);
+};
 
   obtenerRankingAgrupado();
-}, [evento, materias]);
+}, [evento, materias, mentores, equipos]);
+
     const eliminarEvento = async () => {
         const confirmar = window.confirm('¿Estás seguro de eliminar este evento?');
         if (!confirmar) return;
@@ -255,6 +320,29 @@ const DetalleEventoCreador = () => {
             navigate('/mis-eventos');
         }
     };
+
+    // ───────────────── helpers ranking ─────────────────
+const publicarRanking = async () => {
+  const { error } = await supabase
+    .from('publicacion_ranking')
+    .insert({ id_evento: evento.id });
+
+  if (error) return toast.error('Error al publicar');
+  toast.success('Ranking publicado');
+  setRankingPublicado(true);
+};
+
+const eliminarRanking = async () => {
+  const { error } = await supabase
+    .from('publicacion_ranking')
+    .delete()
+    .eq('id_evento', evento.id);
+
+  if (error) return toast.error('Error al eliminar');
+  toast.success('Publicación eliminada');
+  setRankingPublicado(false);
+};
+// ────────────────────────────────────────────────────
 
     const guardarCambios = async () => {
         let nuevaURL = evento.imagen_url;
@@ -703,82 +791,157 @@ const DetalleEventoCreador = () => {
                     <p className="text-muted mt-3">Los participantes pueden escanear este código para registrar
                         su asistencia al evento.</p>
                 </div>
-                {evento.id_estado === 5 && (evento.id_tevento === 2 || evento.id_tevento === 4) && (
-    <div className="mt-5 text-start bg-white border rounded-4 shadow-sm p-4 mb-4">
-      <h4 className="fw-bold text-center mb-4">📊 Ranking del Evento</h4>
-      <div className="text-center mb-4">
-        <img
-          src={evento.imagen_url || '/noDisponible.jpg'}
-          alt="Imagen del evento"
-          className="img-fluid rounded"
-          style={{ maxHeight: '300px', objectFit: 'cover' }}
-        />
-        <p className="mt-2 fw-semibold">{evento.nombre}</p>
-      </div>
 
-      {Object.entries(rankingPorMateria).map(([materia, proyectos]) => (
-        <div key={materia} className="mb-4">
-          <h6 className="fw-semibold mb-2">📚 {materia}</h6>
-          {proyectos.length === 0 ? (
-            <p className="text-muted">No hay proyectos registrados.</p>
-          ) : (
-            <div className="table-responsive">
-              <table className="table table-sm table-bordered text-center align-middle">
-                <thead className="table-light">
-                  <tr>
-                    <th>#</th>
-                    <th>Proyecto</th>
-                    <th>Equipo</th>
-                    <th>Puntaje</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {proyectos.map((p, i) => {
-                    const rowClass =
-                      i === 0 ? 'table-warning fw-bold' :
-                      i === 1 ? 'table-secondary fw-bold' :
-                      i === 2 ? 'table-info fw-bold' : '';
-                    return (
-                      <tr key={p.id} className={rowClass}>
-                        <td>{i + 1}</td>
-                        <td>{p.nombre}</td>
-                        <td>{p.equipo?.nombre || '—'}</td>
-                        <td>{p.puntaje}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      ))}
+{/* ░░░░░░░░░░  BLOQUE RANKING  ░░░░░░░░░░
+     – Visible solo si el evento ES hack/fair   y está FINALIZADO  */}
+{( (evento.id_tevento === 2 || evento.id_tevento === 4) &&
+   evento.id_estado  === 5 ) && (
+  <>
+    {/* ────── botones cabecera ────── */}
+    <button
+      className="btn btn-outline-primary w-100 mt-4"
+      onClick={() => setShowPreview(true)}
+    >
+      Vista previa del ranking
+    </button>
 
-      <div className="text-center mt-4">
-        {!rankingPublicado ? (
-          <button onClick={async () => {
-            const { error } = await supabase.from('publicacion_ranking').insert({ id_evento: evento.id });
-            if (error) toast.error("Error al publicar");
-            else {
-              toast.success("Ranking publicado");
-              setRankingPublicado(true);
-            }
-          }} className="btn btn-success">✅ Publicar ranking</button>
-        ) : (
-          <button onClick={async () => {
-            const { error } = await supabase.from('publicacion_ranking').delete().eq('id_evento', evento.id);
-            if (error) toast.error("Error al eliminar");
-            else {
-              toast.success("Publicación eliminada");
-              setRankingPublicado(false);
-            }
-          }} className="btn btn-danger">🗑 Eliminar publicación</button>
-        )}
-      </div>
+    {!rankingPublicado ? (
+      <button
+        className="btn btn-success w-100 mt-2"
+        onClick={publicarRanking}
+      >
+        ✅ Publicar ranking
+      </button>
+    ) : (
+      <button
+        className="btn btn-danger w-100 mt-2"
+        onClick={eliminarRanking}
+      >
+        🗑 Quitar publicación
+      </button>
+    )}
+
+    {/* ────── Modal ────── */}
+    <Modal show={showPreview} onHide={() => setShowPreview(false)} size="lg" centered>
+      <Modal.Header closeButton>
+        <Modal.Title>📊 Vista previa del ranking</Modal.Title>
+      </Modal.Header>
+
+      <Modal.Body>
+        {/* Banner */}
+        <div className="text-center mb-4">
+          <img
+            src={evento.imagen_url || '/noDisponible.jpg'}
+            alt="banner evento"
+            className="img-fluid rounded"
+            style={{ maxHeight: 220, objectFit: 'cover' }}
+          />
+          <h5 className="mt-3 fw-semibold">{evento.nombre}</h5>
         </div>
-  )}
-           </div>
-            <ToastContainer position="top-right" autoClose={3000} hideProgressBar/>
+
+        {/* CONTENIDO  Materia ➜ Nivel ➜ Proyectos */}
+        {Object.entries(rankingPorMateria).map(([materia, niveles]) => (
+          <div key={materia} className="mb-4">
+            <h5 className="fw-bold text-primary mb-3">📚 {materia}</h5>
+
+            {Object.entries(niveles).map(([nivel, proyectos]) => {
+              /*  clave única Materia+Nivel para el accordion */
+              const nivelKey   = `${materia}-${nivel}`;
+              const abierto    = nivelAbierto[nivelKey];
+
+              return (
+                <div key={nivelKey} className="mb-3">
+                  {/* Botón desplegable de NIVEL */}
+                  <button
+                    className="btn btn-link fw-semibold text-decoration-none px-0"
+                    onClick={() =>
+                      setNivelAbierto(prev => ({ ...prev, [nivelKey]: !prev[nivelKey] }))
+                    }
+                  >
+                    {abierto ? '▾' : '▸'} Nivel <strong>{nivel}</strong>
+                  </button>
+
+                  {/* Tabla ranking PROYECTOS */}
+                  {abierto && (
+                    <div className="table-responsive mt-2">
+                      <table className="table table-sm table-bordered text-center align-middle">
+                        <thead className="table-light">
+                          <tr>
+                            <th>#</th>
+                            <th>Proyecto</th>
+                            <th>Equipo</th>
+                            <th>Mentor</th>
+                            <th>Puntaje</th>
+                          </tr>
+                        </thead>
+
+                        <tbody>
+                          {proyectos.map((p, i) => {
+                            const openRow = filaExpandida[p.id];
+                            const rowCls  =
+                              i === 0 ? 'table-warning fw-bold'
+                              : i === 1 ? 'table-secondary fw-bold'
+                              : i === 2 ? 'table-info fw-bold'
+                              : '';
+
+                            return (
+                              <React.Fragment key={p.id}>
+                                {/* Fila principal */}
+                                <tr className={rowCls}>
+                                  <td>
+                                    <button
+                                      className="btn btn-sm btn-link p-0 me-1"
+                                      onClick={() =>
+                                        setFilaExpandida(prev => ({ ...prev, [p.id]: !prev[p.id] }))
+                                      }
+                                    >
+                                      {openRow ? '▾' : '▸'}
+                                    </button>
+                                    {i + 1}
+                                  </td>
+                                  <td>{p.nombre}</td>
+                                  <td>{p.equipo?.nombre || '—'}</td>
+                                  <td>{p.mentor || '—'}</td>
+                                  <td>{p.puntaje}</td>
+                                </tr>
+
+                                {/* Fila integrantes */}
+                                {openRow && (
+                                  <tr>
+                                    <td colSpan={5} className="bg-light text-start">
+                                      <strong>Integrantes:</strong>{' '}
+                                      {p.integrantes.length
+                                        ? p.integrantes.join(', ')
+                                        : '— Sin integrantes —'}
+                                    </td>
+                                  </tr>
+                                )}
+                              </React.Fragment>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </Modal.Body>
+
+      <Modal.Footer>
+        <Button variant="secondary" onClick={() => setShowPreview(false)}>
+          Cerrar
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  </>
+)}
+
+</div> {/* ← cierra el <div className="container mt-4"> */}
+
+<ToastContainer position="top-right" autoClose={3000} hideProgressBar />
 
         </>
 
