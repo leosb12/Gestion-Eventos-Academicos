@@ -61,7 +61,7 @@ const CrearEvento = () => {
     const [claveAsistencia, setClaveAsistencia] = useState('');
     const [showCropper, setShowCropper] = useState(false);
     const [rawImage, setRawImage] = useState(null);
-    
+
 
     useEffect(() => {
         const fetchData = async () => {
@@ -197,7 +197,8 @@ const CrearEvento = () => {
             }
 
             toast.dismiss(); // por si había uno pendiente
-            navigate('/', {state: {eventoCreado: true}});
+            navigate(`/detalle-evento-creador/${insertedEvento.id}`);
+
         } catch (err) {
             toast.error('Error creando evento');
             console.error(err);

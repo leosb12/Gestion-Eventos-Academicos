@@ -3,6 +3,7 @@ import Navbar from '../components/Navbar';
 import supabase from '../utils/supabaseClient';
 import {toast, ToastContainer} from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+// ...importaciones igual...
 
 const AsignarTribunal = () => {
     const [equipos, setEquipos] = useState([]);
@@ -75,7 +76,6 @@ const AsignarTribunal = () => {
             const proyectoId = proyectosPorEquipo[equipoId];
             if (!proyectoId) continue;
 
-            // Eliminar asignaciones anteriores
             await supabase.from('tribunal').delete().eq('id_proyecto', proyectoId);
 
             if (usuarios.length > 0) {
@@ -85,19 +85,17 @@ const AsignarTribunal = () => {
                     id_equipo: parseInt(equipoId)
                 }));
 
-                console.log("Insertando:", inserts);
-
                 const {error} = await supabase.from('tribunal').insert(inserts);
                 if (error) {
-                    console.error(error); // esto también
+                    console.error(error);
                     toast.error(`Error al asignar tribunal al equipo ${equipoId}`);
                     return;
                 }
-
             }
         }
 
         toast.success('Tribunales asignados correctamente');
+        setTimeout(() => window.location.reload(), 1500);
     };
 
     if (loading) return <p className="text-center mt-5">Cargando...</p>;
@@ -114,7 +112,7 @@ const AsignarTribunal = () => {
                             <th>#</th>
                             <th>🧑‍🤝‍🧑 Equipo</th>
                             <th>🎪 Evento</th>
-                            <th>👨‍⚖️ Tribunales Asignados</th>
+                            <th>👨‍⚖️ Tribunal</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -128,40 +126,30 @@ const AsignarTribunal = () => {
                                         <>
                                             <button
                                                 className={`btn btn-sm ${
-                                                    asignaciones[equipo.id]?.length > 0 ? 'btn-outline-dark' : 'btn-outline-primary'
+                                                    asignaciones[equipo.id]?.length > 0 ? 'btn-outline-secondary' : 'btn-outline-primary'
                                                 }`}
                                                 onClick={() => setExpanded(expanded === equipo.id ? null : equipo.id)}
                                             >
-                                                {expanded === equipo.id ? 'Cerrar' : (asignaciones[equipo.id]?.length > 0 ? 'Ver Tribunal' : 'Asignar')}
+                                                {expanded === equipo.id ? 'Cerrar' : (asignaciones[equipo.id]?.length > 0 ? 'Editar Tribunal' : 'Asignar Tribunal')}
                                             </button>
 
                                             {expanded === equipo.id && (
                                                 <div className="mt-2 text-start">
-                                                    {asignaciones[equipo.id]?.length > 0 ? (
-                                                        asignaciones[equipo.id].map(id => {
-                                                            const tribunal = tribunales.find(t => t.id === id);
-                                                            return (
-                                                                <div key={id}
-                                                                     className="text-secondary ms-2">👤 {tribunal?.nombre || 'Desconocido'}</div>
-                                                            );
-                                                        })
-                                                    ) : (
-                                                        tribunales.map(t => (
-                                                            <div key={t.id} className="form-check">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    className="form-check-input"
-                                                                    id={`chk-${equipo.id}-${t.id}`}
-                                                                    checked={(asignaciones[equipo.id] || []).includes(t.id)}
-                                                                    onChange={() => toggleTribunal(equipo.id, t.id)}
-                                                                />
-                                                                <label className="form-check-label"
-                                                                       htmlFor={`chk-${equipo.id}-${t.id}`}>
-                                                                    {t.nombre}
-                                                                </label>
-                                                            </div>
-                                                        ))
-                                                    )}
+                                                    {tribunales.map(t => (
+                                                        <div key={t.id} className="form-check">
+                                                            <input
+                                                                type="checkbox"
+                                                                className="form-check-input"
+                                                                id={`chk-${equipo.id}-${t.id}`}
+                                                                checked={(asignaciones[equipo.id] || []).includes(t.id)}
+                                                                onChange={() => toggleTribunal(equipo.id, t.id)}
+                                                            />
+                                                            <label className="form-check-label"
+                                                                   htmlFor={`chk-${equipo.id}-${t.id}`}>
+                                                                {t.nombre}
+                                                            </label>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             )}
                                         </>
@@ -169,7 +157,6 @@ const AsignarTribunal = () => {
                                         <span className="text-muted fst-italic">Sin proyecto</span>
                                     )}
                                 </td>
-
                             </tr>
                         ))}
                         </tbody>

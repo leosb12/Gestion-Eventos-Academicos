@@ -29,6 +29,12 @@ import AsignarTribunal from "./pages/AsignarTribunal.jsx";
 import AsignarMentor from "./pages/AsignarMentor.jsx";
 import GestionarProyectos from './pages/GestionarProyectos';
 import GestionarNotificaciones from "./pages/GestionarNotificaciones.jsx";
+import CertificadosEventos from "./pages/CertificadosEventos.jsx";
+import CalendarioEventos from './pages/CalendarioEventos';
+import GestionarEquipos from './pages/GestionarEquipos';
+import EvaluarProyectos from './pages/EvaluarProyectos';
+import ResultadosRanking from './pages/ResultadosRanking.jsx';
+
 
 export const router = createBrowserRouter([
     {
@@ -52,6 +58,17 @@ export const router = createBrowserRouter([
                     </PublicRoute>
                 )
             },
+
+            {
+                path: "evaluar-proyectos",
+                element: (
+                    <PrivateRoute>
+                        <EvaluarProyectos/>
+                    </PrivateRoute>
+                )
+            },
+
+
             {path: "update-password", element: <UpdatePassword/>},
 
             {
@@ -85,6 +102,16 @@ export const router = createBrowserRouter([
                         <CrearEvento/>
                     </PrivateRoute>
                 )
+            },
+
+            {
+                path: "gestionar-equipos",
+                element: (
+                    <PrivateRoute>
+                        <GestionarEquipos/>
+                    </PrivateRoute>
+                )
+
             },
             {
                 path: "gestionar-eventos",
@@ -228,6 +255,30 @@ export const router = createBrowserRouter([
                 element: (
                     <PrivateRoute>
                         <GestionarNotificaciones/>
+                    </PrivateRoute>
+                )
+            },
+            {
+                path: "enviar-certificados",
+                element: (
+                    <PrivateRoute>
+                        <CertificadosEventos/>
+                    </PrivateRoute>
+                )
+            },
+            {
+                path: "calendario-eventos",
+                element: (
+                    <PrivateRoute>
+                        <CalendarioEventos/>
+                    </PrivateRoute>
+                )
+            },
+            {
+                path: "resultados-ranking",
+                element: (
+                    <PrivateRoute>
+                        <ResultadosRanking/>
                     </PrivateRoute>
                 )
             }
