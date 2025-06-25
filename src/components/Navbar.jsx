@@ -434,6 +434,14 @@ export default function Navbar() {
                                             </ul>
                                         )}
                                     </li>
+                                    <li>
+        <NavLink
+          to="/resultados-ranking"
+          className={({ isActive }) => `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`}
+        >
+          Ranking
+        </NavLink>
+      </li>
                                 </ul>
                             </li>
                         )}
