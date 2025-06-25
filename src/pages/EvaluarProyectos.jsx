@@ -37,40 +37,72 @@ export default function EvaluarProyectos() {
             toast.error('Acceso no autorizado');
             navigate('/');
         }
-    }, [tipoUsuario]);
+    }, [tipoUsuario, navigate]);
 
-    // 3) traer equipos + evaluaciones previas
+    // 3) traer equipos + su informe + evaluaciones previas
     useEffect(() => {
-        if (!usuarioId) return;
+        if (usuarioId == null || tipoUsuario == null) return;
+
         (async () => {
-            // a) equipos donde soy tribunal
-            const {data: asigns} = await supabase
-                .from('tribunal')
-                .select('id_equipo')
-                .eq('id_usuario', usuarioId);
-            const equipoIds = (asigns || []).map(a => a.id_equipo);
+            let equipos = [];
 
-            if (!equipoIds.length) return setEquiposAsignados([]);
+            const selectEquipos = `
+        id,
+        nombre,
+        evento(id_tevento),
+        proyecto(id, url_informe)
+      `;
 
-            // b) datos de equipo + su evento(id_tevento)
-            const {data: equipos} = await supabase
-                .from('equipo')
-                .select('id, nombre, evento(id_tevento)')       // <-- ojo al nombre id_tevento
-                .in('id', equipoIds);
-            setEquiposAsignados(equipos || []);
+            if (tipoUsuario === 7) {
+                // admin: traigo TODOS los equipos
+                const {data: allEqs, error: errAll} = await supabase
+                    .from('equipo')
+                    .select(selectEquipos);
+                if (errAll) {
+                    toast.error('Error al cargar equipos');
+                    return;
+                }
+                equipos = allEqs;
+            } else {
+                // tribunal: solo los que tengo asignados
+                const {data: asigns, error: errTr} = await supabase
+                    .from('tribunal')
+                    .select('id_equipo')
+                    .eq('id_usuario', usuarioId);
+                if (errTr) {
+                    toast.error('Error al cargar asignaciones');
+                    return;
+                }
+                const equipoIds = (asigns || []).map(a => a.id_equipo);
+                if (equipoIds.length) {
+                    const {data: misEqs, error: errEqs} = await supabase
+                        .from('equipo')
+                        .select(selectEquipos)
+                        .in('id', equipoIds);
+                    if (errEqs) {
+                        toast.error('Error al cargar equipos');
+                        return;
+                    }
+                    equipos = misEqs;
+                }
+            }
+
+            setEquiposAsignados(equipos);
 
             // c) evaluaciones ya hechas por mí
-            const {data: evals} = await supabase
+            const {data: evals, error: errEvals} = await supabase
                 .from('evaluacion')
                 .select('id_equipo, puntaje, comentario, fecha')
                 .eq('id_usuario', usuarioId);
-            const mapEval = {};
-            (evals || []).forEach(e => {
-                mapEval[e.id_equipo] = e;
-            });
-            setEvaluacionesRealizadas(mapEval);
+            if (!errEvals) {
+                const mapEval = {};
+                (evals || []).forEach(e => {
+                    mapEval[e.id_equipo] = e;
+                });
+                setEvaluacionesRealizadas(mapEval);
+            }
         })();
-    }, [usuarioId]);
+    }, [usuarioId, tipoUsuario]);
 
     // handlers de formulario
     const handleEvaluacion = (equipoId, criterio, valor) => {
@@ -144,6 +176,23 @@ export default function EvaluarProyectos() {
                             </select>
                         </div>
                     ))}
+
+                    {/* ——— Aquí mostramos el botón de Informe PDF sólo para Ferias ——— */}
+                    {equipo.evento?.id_tevento === 2 &&
+                        Array.isArray(equipo.proyecto) &&
+                        equipo.proyecto[0]?.url_informe && (
+                            <div className="mb-3">
+                                <a
+                                    href={equipo.proyecto[0].url_informe}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="btn btn-outline-primary"
+                                >
+                                    📄 Ver Informe PDF
+                                </a>
+                            </div>
+                        )}
+
                     <div className="mb-3">
                         <label className="form-label">Comentarios</label>
                         <textarea
@@ -160,7 +209,6 @@ export default function EvaluarProyectos() {
         );
     };
 
-    // separar ferias y hackatones por id_tevento
     const ferias = equiposAsignados.filter(e => e.evento?.id_tevento === 2);
     const hackatones = equiposAsignados.filter(e => e.evento?.id_tevento === 4);
 
@@ -171,12 +219,18 @@ export default function EvaluarProyectos() {
                 <h2>Evaluar Equipos Asignados</h2>
 
                 <h4 className="text-primary">Equipos de Feria</h4>
-                {ferias.length ? ferias.map(renderEvaluacion) : <p>No tienes equipos de feria.</p>}
+                {ferias.length
+                    ? ferias.map(renderEvaluacion)
+                    : <p>No tienes equipos de feria.</p>
+                }
 
                 <hr/>
 
                 <h4 className="text-success">Equipos de Hackatón</h4>
-                {hackatones.length ? hackatones.map(renderEvaluacion) : <p>No tienes equipos de hackatón.</p>}
+                {hackatones.length
+                    ? hackatones.map(renderEvaluacion)
+                    : <p>No tienes equipos de hackatón.</p>
+                }
             </div>
         </>
     );
