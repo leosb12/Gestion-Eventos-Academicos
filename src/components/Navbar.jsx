@@ -14,6 +14,8 @@ export default function Navbar() {
     const [submenuCategoriaAbierto, setSubmenuCategoriaAbierto] = useState(false);
     const [submenuMisEventosAbierto, setSubmenuMisEventosAbierto] = useState(false);
     const [submenuGestionAbierto, setSubmenuGestionAbierto] = useState(false);
+    const [submenuGestionEquiposAbierto, setSubmenuGestionEquiposAbierto] = useState(false);
+    const [submenuGestionProyectosAbierto, setSubmenuGestionProyectosAbierto] = useState(false);
 
     useEffect(() => {
         const fetchTipos = async () => {
@@ -319,14 +321,14 @@ export default function Navbar() {
                                 </a>
                                 <ul className="dropdown-menu bg-primary border-0 shadow-none">
 
-                                    {/* Submenú de Gestión de Equipos */}
+                                    {/* Submenú Gestionar Equipos */}
                                     <li className="dropdown-submenu">
                                         <button
                                             type="button"
                                             className="dropdown-item text-white"
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                setSubmenuGestionAbierto(!submenuGestionAbierto);
+                                                setSubmenuGestionEquiposAbierto(!submenuGestionEquiposAbierto);
                                             }}
                                             style={{
                                                 width: '100%',
@@ -337,7 +339,7 @@ export default function Navbar() {
                                         >
                                             Gestionar Equipos ▼
                                         </button>
-                                        {submenuGestionAbierto && (
+                                        {submenuGestionEquiposAbierto && (
                                             <ul className="dropdown-menu show" style={{
                                                 position: 'relative',
                                                 background: 'transparent',
@@ -382,17 +384,64 @@ export default function Navbar() {
                                         )}
                                     </li>
 
-                                    {/* Link directo a Gestionar Proyectos */}
-                                    <li>
-                                        <NavLink
-                                            to="/gestionar-proyectos"
-                                            className={({isActive}) =>
-                                                `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
-                                            }
+                                    {/* Submenú Gestionar Proyectos */}
+                                    <li className="dropdown-submenu">
+                                        <button
+                                            type="button"
+                                            className="dropdown-item text-white"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setSubmenuGestionProyectosAbierto(!submenuGestionProyectosAbierto);
+                                            }}
+                                            style={{
+                                                width: '100%',
+                                                textAlign: 'left',
+                                                background: 'none',
+                                                border: 'none'
+                                            }}
                                         >
-                                            Gestionar Proyectos
-                                        </NavLink>
+                                            Gestionar Proyectos ▼
+                                        </button>
+                                        {submenuGestionProyectosAbierto && (
+                                            <ul className="dropdown-menu show" style={{
+                                                position: 'relative',
+                                                background: 'transparent',
+                                                border: 'none',
+                                                boxShadow: 'none'
+                                            }}>
+                                                <li>
+                                                    <NavLink
+                                                        to="/gestionar-proyectos"
+                                                        className={({isActive}) =>
+                                                            `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                                                        }
+                                                    >
+                                                        Gestionar Proyectos
+                                                    </NavLink>
+                                                </li>
+                                                {[3, 7].includes(tipoUsuario) && (
+                                                    <li>
+                                                        <NavLink
+                                                            to="/evaluar-proyectos"
+                                                            className={({isActive}) =>
+                                                                `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`
+                                                            }
+                                                        >
+                                                            Evaluar Proyectos
+                                                        </NavLink>
+                                                    </li>
+                                                )}
+                                            </ul>
+                                        )}
                                     </li>
+                                    <li>
+        <NavLink
+          to="/resultados-ranking"
+          className={({ isActive }) => `dropdown-item text-white ${isActive ? 'fw-bold' : ''}`}
+        >
+          Ranking
+        </NavLink>
+      </li>
                                 </ul>
                             </li>
                         )}

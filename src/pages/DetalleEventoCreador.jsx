@@ -5,7 +5,7 @@ import Navbar from '../components/Navbar';
 import {toast} from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import {ToastContainer} from 'react-toastify';
-
+import { Modal, Button } from 'react-bootstrap';
 
 const DetalleEventoCreador = () => {
     const {id} = useParams();
@@ -25,6 +25,15 @@ const DetalleEventoCreador = () => {
     const [tribunalPorEquipo, setTribunalPorEquipo] = useState({});
     const [mentores, setMentores] = useState([]);
     const [mentorPorEquipo, setMentorPorEquipo] = useState({});
+    const [rankingPorMateria, setRankingPorMateria] = useState({});
+    const [materias, setMaterias] = useState([]);
+    const [rankingPublicado, setRankingPublicado] = useState(false);
+    const [showPreview, setShowPreview] = useState(false);   // controla el modal
+    const [filaExpandida, setFilaExpandida] = useState({});
+    const [niveles, setNiveles]           = useState([]);   // ← catálogos Basico/Intermedio/Avanzado
+    const [nivelAbierto, setNivelAbierto] = useState({});  // controla los “dropdowns” de nivel
+    const ES_FERIA    = evento?.id_tevento === 2;   // ← con proyecto
+    const ES_HACKATHON= evento?.id_tevento === 4;   // ← sin proyecto
 
     useEffect(() => {
         // Cargar todos los usuarios tipo mentor (id_tipo_usuario = 8)
@@ -46,40 +55,54 @@ const DetalleEventoCreador = () => {
 
     useEffect(() => {
         const fetchData = async () => {
-            const {data: authUser} = await supabase.auth.getUser();
-            const correo = authUser?.user?.email;
-            if (!correo) return navigate('/');
+  const {data: authUser} = await supabase.auth.getUser();
+  const correo = authUser?.user?.email;
+  if (!correo) return navigate('/');
 
-            const {data: usuario} = await supabase
-                .from('usuario')
-                .select('id')
-                .eq('correo', correo)
-                .maybeSingle();
+  const {data: usuario} = await supabase
+    .from('usuario')
+    .select('id')
+    .eq('correo', correo)
+    .maybeSingle();
 
-            if (!usuario) return navigate('/');
-            setUsuarioId(usuario.id);
+  if (!usuario) return navigate('/');
+  setUsuarioId(usuario.id);
 
-            const [{data: eventoData, error: eventoError}, {data: estadosData}] = await Promise.all([
-                supabase.from('evento').select('*').eq('id', id).maybeSingle(),
-                supabase.from('estado').select('*')
-            ]);
+  const [{data: eventoData, error: eventoError}, {data: estadosData}] = await Promise.all([
+    supabase.from('evento').select('*').eq('id', id).maybeSingle(),
+    supabase.from('estado').select('*')
+  ]);
 
-            if (eventoError || !eventoData || eventoData.id_usuario_creador !== usuario.id) {
-                toast.error('No tienes permiso para ver este evento');
-                return navigate('/');
-            }
+  if (eventoError || !eventoData || eventoData.id_usuario_creador !== usuario.id) {
+    toast.error('No tienes permiso para ver este evento');
+    return navigate('/');
+  }
 
-            setEvento(eventoData);
-            setEstados(estadosData || []);
-            setForm({
-                nombre: eventoData.nombre,
-                descripcion: eventoData.descripcion,
-                fechainicio: eventoData.fechainicio,
-                fechafin: eventoData.fechafin,
-                nuevaImagen: null
-            });
-            setLoading(false);
-        };
+  setEvento(eventoData);
+  setEstados(estadosData || []);
+  setForm({
+    nombre: eventoData.nombre,
+    descripcion: eventoData.descripcion,
+    fechainicio: eventoData.fechainicio,
+    fechafin: eventoData.fechafin,
+    nuevaImagen: null
+  });
+
+  // 🔥 CORRECTO: fuera del setForm
+  const { data: rankingPub } = await supabase
+    .from('publicacion_ranking')
+    .select('*')
+    .eq('id_evento', eventoData.id)
+    .maybeSingle();
+  setRankingPublicado(!!rankingPub);
+
+  const { data: materiasData } = await supabase
+    .from('materia')
+    .select('id, nombre');
+  setMaterias(materiasData || []);
+
+  setLoading(false);
+};
 
         fetchData();
     }, [id, navigate]);
@@ -97,7 +120,7 @@ const DetalleEventoCreador = () => {
         if (!evento) return;
 
         const cargarInscritosOEquipos = async () => {
-            if (evento.id_tevento === 2 || evento.id_tevento === 4) {
+            if (ES_HACKATHON || ES_FERIA) {
                 const {data: equiposData} = await supabase
                     .from('equipo')
                     .select('id, nombre, id_lider')
@@ -198,6 +221,134 @@ const DetalleEventoCreador = () => {
 
         fetchTribunalesAsignados();
     }, [equipos]);
+    /* ═════════  NUEVO useEffect  ═════════ */
+const [rankingData, setRankingData] = useState({});   // ← se mantiene
+
+useEffect(() => {
+  /* Sólo Hackathón (2) o Feria (4) y evento finalizado (5) */
+  if (!evento || evento.id_estado !== 5 || ![2, 4].includes(evento.id_tevento)) return;
+
+  (async () => {
+    /* 1) equipos del evento */
+    const { data: equipos } = await supabase
+      .from('equipo')
+      .select('id, nombre, mentor_id')
+      .eq('id_evento', evento.id);
+
+    if (!equipos?.length) return setRankingData({});
+
+    const eqIds  = equipos.map(e => e.id);
+    const eqById = Object.fromEntries(equipos.map(e => [e.id, e]));
+
+    /* 2) catalogar niveles de cada equipo */
+    const { data: nivEq } = await supabase
+      .from('nivelgrupo')
+      .select('id_equipo, nivel:nivel(id,nombre)')
+      .in('id_equipo', eqIds);
+
+    const nivPorEq = Object.fromEntries(
+      (nivEq || []).map(r => [r.id_equipo, r.nivel?.nombre || 'Sin nivel'])
+    );
+
+    /* 3) integrantes de cada equipo */
+    const { data: miembros } = await supabase
+      .from('miembrosequipo')
+      .select('id_equipo, usuario:usuario(id,nombre)')
+      .in('id_equipo', eqIds);
+
+    const intPorEq = {};
+    (miembros || []).forEach(m => {
+      if (!intPorEq[m.id_equipo]) intPorEq[m.id_equipo] = [];
+      intPorEq[m.id_equipo].push(m.usuario?.nombre ?? '—');
+    });
+
+/* 4) notas reales ------------------------------------------------ */
+const { data: proyMini } = await supabase   // ←  NUEVO nombre
+  .from('proyecto')
+  .select('id, id_equipo')
+  .in('id_equipo', eqIds);
+
+
+let puntajeEq   = {};   // id_equipo   → nota final
+let puntajeProj = {};   // id_proyecto → nota   (solo se usa en feria)
+
+/* Traigo todas las evaluaciones del evento una sola vez  */
+const { data: evals } = await supabase
+  .from('evaluacion')
+  .select('id_proyecto, puntaje');
+
+/* Mapeo general proyecto → nota */
+puntajeProj = Object.fromEntries((evals || []).map(e => [e.id_proyecto, e.puntaje]));
+
+/* Para hackathón: cada equipo tiene exactamente un proyecto.
+   Convierto el mapa anterior a   equipo → nota  */
+proyMini?.forEach(p => {                // ← usa la lista renombrada
+  if (puntajeProj[p.id] !== undefined) {
+    puntajeEq[p.id_equipo] = puntajeProj[p.id];
+  }
+});
+
+/* 5) mentores + materias (para feria) */
+    const mentorNom = Object.fromEntries(mentores.map(m => [m.id, m.nombre]));
+    const matNom    = Object.fromEntries(materias.map(m => [m.id, m.nombre]));
+
+    /* 6) AGRUPADO ----------------------------------------------------- */
+    if (ES_HACKATHON) {     /* ─── Hackathón: NIVEL → [row] ─── */
+      const agrup = {};
+
+      equipos.forEach(eq => {
+        const nivel = nivPorEq[eq.id];
+        const row   = {
+          id         : eq.id,
+          nombre     : '—',                  // sin proyecto
+          equipo     : { nombre: eq.nombre },
+          mentor     : mentorNom[eq.mentor_id] || '—',
+          integrantes: intPorEq[eq.id] || [],
+          puntaje    : puntajeEq[eq.id] ?? 0
+        };
+        if (!agrup[nivel]) agrup[nivel] = [];
+        agrup[nivel].push(row);
+      });
+
+      Object.values(agrup).forEach(lst => lst.sort((a,b) => b.puntaje - a.puntaje));
+      setRankingData(agrup);
+
+    } else if(ES_FERIA){                          /* ─── Feria: MATERIA → NIVEL → [row] ─── */
+      /* proyectos de los equipos */
+const { data: proyFull } = await supabase   // ←  NUEVO nombre
+  .from('proyecto')
+  .select('*')
+  .in('id_equipo', eqIds);
+
+      const agrup = {};
+
+      (proyFull || []).forEach(p => {
+        const eq      = eqById[p.id_equipo];
+        const materia = matNom[p.id_materia] || 'Sin materia';
+        const nivel   = nivPorEq[eq.id];
+
+        const row = {
+          ...p,
+          equipo     : eq,
+          mentor     : mentorNom[eq.mentor_id] || '—',
+          integrantes: intPorEq[eq.id] || [],
+          puntaje    : puntajeProj[p.id] ?? 0
+        };
+
+        if (!agrup[materia])           agrup[materia]        = {};
+        if (!agrup[materia][nivel])    agrup[materia][nivel] = [];
+        agrup[materia][nivel].push(row);
+      });
+
+      Object.values(agrup).forEach(nivObj =>
+        Object.values(nivObj).forEach(lst => lst.sort((a,b) => b.puntaje - a.puntaje))
+      );
+      setRankingData(agrup);
+    }
+  })();
+}, [evento, mentores, materias]);
+
+
     const eliminarEvento = async () => {
         const confirmar = window.confirm('¿Estás seguro de eliminar este evento?');
         if (!confirmar) return;
@@ -209,6 +360,29 @@ const DetalleEventoCreador = () => {
             navigate('/mis-eventos');
         }
     };
+
+    // ───────────────── helpers ranking ─────────────────
+const publicarRanking = async () => {
+  const { error } = await supabase
+    .from('publicacion_ranking')
+    .insert({ id_evento: evento.id });
+
+  if (error) return toast.error('Error al publicar');
+  toast.success('Ranking publicado');
+  setRankingPublicado(true);
+};
+
+const eliminarRanking = async () => {
+  const { error } = await supabase
+    .from('publicacion_ranking')
+    .delete()
+    .eq('id_evento', evento.id);
+
+  if (error) return toast.error('Error al eliminar');
+  toast.success('Publicación eliminada');
+  setRankingPublicado(false);
+};
+// ────────────────────────────────────────────────────
 
     const guardarCambios = async () => {
         let nuevaURL = evento.imagen_url;
@@ -358,7 +532,7 @@ const DetalleEventoCreador = () => {
 
                 <hr/>
 
-                {(evento.id_tevento === 2 || evento.id_tevento === 4) ? (
+                {(ES_HACKATHON || ES_FERIA) ? (
                     <>
                         <h4 className="mb-3">🧑‍🤝‍🧑 Grupos Inscritos</h4>
                         {equipos.length === 0 ? (
@@ -657,8 +831,198 @@ const DetalleEventoCreador = () => {
                     <p className="text-muted mt-3">Los participantes pueden escanear este código para registrar
                         su asistencia al evento.</p>
                 </div>
-            </div>
-            <ToastContainer position="top-right" autoClose={3000} hideProgressBar/>
+
+{/* ░░░░░░░░░░  BLOQUE RANKING  ░░░░░░░░░░
+     – Se muestra sólo si el evento es Feria (id_tevento = 4)
+       o Hackathón (id_tevento = 2) y está FINALIZADO (id_estado = 5) */}
+{ [2,4].includes(evento.id_tevento) && evento.id_estado === 5 && (
+  <>
+    {/* ───────── BOTONES ───────── */}
+    <button
+      className="btn btn-outline-primary w-100 mt-4"
+      onClick={() => setShowPreview(true)}
+    >
+      Vista previa del ranking
+    </button>
+
+    { !rankingPublicado ? (
+      <button
+        className="btn btn-success w-100 mt-2 mb-3"
+        onClick={publicarRanking}
+      >
+        ✅ Publicar ranking
+      </button>
+    ) : (
+      <button
+        className="btn btn-danger w-100 mt-2 mb-3"
+        onClick={eliminarRanking}
+      >
+        🗑 Quitar publicación
+      </button>
+    )}
+
+    {/* ───────── MODAL ───────── */}
+    <Modal show={showPreview} onHide={() => setShowPreview(false)} size="lg" centered>
+      <Modal.Header closeButton>
+        <Modal.Title>📊 Vista previa del ranking</Modal.Title>
+      </Modal.Header>
+
+      <Modal.Body>
+        {/* banner / título */}
+        <div className="text-center mb-4">
+          <img
+            src={evento.imagen_url || '/noDisponible.jpg'}
+            alt="banner evento"
+            className="img-fluid rounded"
+            style={{ maxHeight: 220, objectFit: 'cover' }}
+          />
+          <h5 className="mt-3 fw-semibold">{evento.nombre}</h5>
+        </div>
+
+        {/* ═════════  HACKATHÓN  ═════════ */}
+{ES_HACKATHON && Object.entries(rankingData).map(([nivel, filas]) => (
+  <div key={nivel} className="mb-4">
+    <h6 className="fw-semibold mb-2">🎓 Nivel {nivel}</h6>
+
+    <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+      <table className="table table-sm table-bordered text-center align-middle mb-0">
+        <thead className="table-light sticky-top">
+          <tr>
+            <th style={{ width: 55 }}>#</th>
+            {/*  Sin columna Proyecto  */}
+            <th>Equipo</th>
+            <th>Mentor</th>
+            <th style={{ width: 80 }}>Puntaje</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {filas.map((r, idx) => {
+            const open  = filaExpandida[r.id];
+            const style =
+              idx === 0 ? 'table-warning fw-bold' :
+              idx === 1 ? 'table-secondary fw-bold' :
+              idx === 2 ? 'table-info fw-bold' : '';
+
+            return (
+              <React.Fragment key={r.id}>
+                <tr className={style}>
+                  <td>
+                    <button
+                      className="btn btn-sm btn-link p-0 me-1"
+                      onClick={() =>
+                        setFilaExpandida(prev => ({ ...prev, [r.id]: !prev[r.id] }))
+                      }
+                    >
+                      {open ? '▾' : '▸'}
+                    </button>
+                    {['🥇','🥈','🥉'][idx] || ''} {idx + 1}
+                  </td>
+                  <td>{r.equipo.nombre}</td>
+                  <td>{r.mentor}</td>
+                  <td>{r.puntaje}</td>
+                </tr>
+
+                {open && (
+                  <tr>
+                    <td colSpan={4} className="bg-light text-start">
+                      <strong>Integrantes:</strong>{' '}
+                      {r.integrantes.length
+                        ? r.integrantes.join(', ')
+                        : '— Sin integrantes —'}
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  </div>
+))}
+
+        {/* ═════════  FERIA  ═════════ */}
+        {ES_FERIA && Object.entries(rankingData).map(([materia, niveles]) => (
+          <div key={materia} className="mb-4">
+            <h5 className="fw-bold text-primary mb-3">📚 {materia}</h5>
+
+            {Object.entries(niveles).map(([nivel, filas]) => (
+              <div key={nivel} className="mb-3">
+                <h6 className="fw-semibold mb-2 ps-2">🎓 Nivel {nivel}</h6>
+
+                <div style={{ maxHeight: 400, overflowY: 'auto' }}>
+                  <table className="table table-sm table-bordered text-center align-middle mb-0">
+                    <thead className="table-light sticky-top">
+                      <tr>
+                        <th style={{ width: 55 }}>#</th>
+                        <th>Proyecto</th>
+                        <th>Equipo</th>
+                        <th>Mentor</th>
+                        <th style={{ width: 80 }}>Puntaje</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filas.map((p, idx) => {
+                        const open  = filaExpandida[p.id];
+                        const style =
+                          idx === 0 ? 'table-warning fw-bold' :
+                          idx === 1 ? 'table-secondary fw-bold' :
+                          idx === 2 ? 'table-info fw-bold' : '';
+                        return (
+                          <React.Fragment key={p.id}>
+                            <tr className={style}>
+                              <td>
+                                <button
+                                  className="btn btn-sm btn-link p-0 me-1"
+                                  onClick={() =>
+                                    setFilaExpandida(prev => ({ ...prev, [p.id]: !prev[p.id] }))
+                                  }
+                                >
+                                  {open ? '▾' : '▸'}
+                                </button>
+                                {['🥇','🥈','🥉'][idx] || ''} {idx + 1}
+                              </td>
+                              <td>{p.nombre}</td>
+                              <td>{p.equipo?.nombre || '—'}</td>
+                              <td>{p.mentor}</td>
+                              <td>{p.puntaje}</td>
+                            </tr>
+
+                            {open && (
+                              <tr>
+                                <td colSpan={5} className="bg-light text-start">
+                                  <strong>Integrantes:</strong>{' '}
+                                  {p.integrantes.length
+                                    ? p.integrantes.join(', ')
+                                    : '— Sin integrantes —'}
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+          </div>
+        ))}
+      </Modal.Body>
+
+      <Modal.Footer>
+        <Button variant="secondary" onClick={() => setShowPreview(false)}>
+          Cerrar
+        </Button>
+      </Modal.Footer>
+    </Modal>
+  </>
+)}
+
+</div> {/* ← cierra el <div className="container mt-4"> */}
+
+<ToastContainer position="top-right" autoClose={3000} hideProgressBar />
 
         </>
 
