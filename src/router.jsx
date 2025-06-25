@@ -32,6 +32,7 @@ import GestionarNotificaciones from "./pages/GestionarNotificaciones.jsx";
 import CertificadosEventos from "./pages/CertificadosEventos.jsx";
 import CalendarioEventos from './pages/CalendarioEventos';
 import GestionarEquipos from './pages/GestionarEquipos';
+import EvaluarProyectos from './pages/EvaluarProyectos';
 import ResultadosRanking from './pages/ResultadosRanking.jsx';
 
 
@@ -57,6 +58,17 @@ export const router = createBrowserRouter([
                     </PublicRoute>
                 )
             },
+
+            {
+                path: "evaluar-proyectos",
+                element: (
+                    <PrivateRoute>
+                        <EvaluarProyectos/>
+                    </PrivateRoute>
+                )
+            },
+
+
             {path: "update-password", element: <UpdatePassword/>},
 
             {
