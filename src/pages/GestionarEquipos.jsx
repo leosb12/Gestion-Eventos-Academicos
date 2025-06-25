@@ -21,6 +21,7 @@ const GestionarEquipos = () => {
                 setLoading(false);
                 return;
             }
+
             const {data: usuarioData, error: errUser} = await supabase
                 .from('usuario')
                 .select('id, id_tipo_usuario, tipo_usuario:tipousuario(nombre)')
@@ -31,6 +32,7 @@ const GestionarEquipos = () => {
                 setLoading(false);
                 return;
             }
+
             const uid = usuarioData.id;
             const tipoId = usuarioData.id_tipo_usuario;
             setIdUsuario(uid);
@@ -45,6 +47,17 @@ const GestionarEquipos = () => {
                 evalMap[e.id_equipo] = e;
             });
 
+            // Define el SELECT base, incluyendo el nombre del mentor
+            const baseSelect = `
+        id,
+        nombre,
+        id_lider,
+        id_evento,
+        evento(nombre),
+        mentor_id,
+        mentor:usuario!mentor_id(nombre)
+      `;
+
             // 3) TRAER MIS EQUIPOS
             const {data: misMiembros} = await supabase
                 .from('miembrosequipo')
@@ -55,7 +68,7 @@ const GestionarEquipos = () => {
             const misEquiposData = misEquipoIds.length > 0
                 ? (await supabase
                         .from('equipo')
-                        .select('id, nombre, id_lider, id_evento, evento(nombre), mentor_id')
+                        .select(baseSelect)
                         .in('id', misEquipoIds)
                 ).data
                 : [];
@@ -84,7 +97,7 @@ const GestionarEquipos = () => {
             if (tipoId === 6 || tipoId === 7) {
                 const {data: all} = await supabase
                     .from('equipo')
-                    .select('id, nombre, id_lider, id_evento, evento(nombre), mentor_id');
+                    .select(baseSelect);
                 const todos = all || [];
                 const todosConMiembros = await Promise.all(
                     todos.map(async equipo => {
@@ -140,6 +153,8 @@ const GestionarEquipos = () => {
         }
     };
 
+    const MAX_PUNTAJE = 5 * 3;
+
     const renderEquipoCard = equipo => (
         <div key={equipo.id} className="col-12 col-md-6 mb-4">
             <div className="card shadow border h-100">
@@ -152,15 +167,19 @@ const GestionarEquipos = () => {
                         className="btn btn-sm btn-danger mt-2 mt-md-0"
                         onClick={() => salirOEliminar(equipo)}
                     >
-                        {(idUsuario === equipo.id_lider || tipoUsuario === 'Organizador' || tipoUsuario === 'Administrador')
+                        {(idUsuario === equipo.id_lider ||
+                            tipoUsuario === 'Organizador' ||
+                            tipoUsuario === 'Administrador')
                             ? '🗑 Eliminar equipo'
-                            : '🚪 Salir del equipo'
-                        }
+                            : '🚪 Salir del equipo'}
                     </button>
                 </div>
                 <div className="card-body">
                     <p><strong>👑 Líder del equipo:</strong> {equipo.id_lider}</p>
-                    <p><strong>🎓 Mentor:</strong> {equipo.mentor_id || 'No asignado'}</p>
+                    <p>
+                        <strong>🎓 Mentor:</strong>{' '}
+                        {equipo.mentor?.nombre || 'No asignado'}
+                    </p>
 
                     <h6 className="fw-bold mt-3">👥 Miembros:</h6>
                     <ul className="list-group list-group-flush">
@@ -185,12 +204,11 @@ const GestionarEquipos = () => {
                         </>
                     )}
 
-                    {/* —— Evaluación —— */}
                     <h6 className="fw-bold mt-3">📝 Evaluación:</h6>
                     {equipo.evaluacion ? (
                         <ul className="list-group list-group-flush">
                             <li className="list-group-item">
-                                <strong>Puntaje:</strong> {equipo.evaluacion.puntaje}
+                                <strong>Puntaje:</strong> {equipo.evaluacion.puntaje}/{MAX_PUNTAJE}
                             </li>
                             <li className="list-group-item">
                                 <strong>Comentario:</strong> {equipo.evaluacion.comentario}
@@ -214,18 +232,20 @@ const GestionarEquipos = () => {
             <Navbar/>
             <div className="container mt-4 px-3">
                 <h2 className="fw-bold text-center mb-4">📋 Mis Equipos</h2>
-                {misEquipos.length === 0
-                    ? <p className="text-center text-muted">No hay equipos disponibles.</p>
-                    : <div className="row">{misEquipos.map(renderEquipoCard)}</div>
-                }
+                {misEquipos.length === 0 ? (
+                    <p className="text-center text-muted">No hay equipos disponibles.</p>
+                ) : (
+                    <div className="row">{misEquipos.map(renderEquipoCard)}</div>
+                )}
 
                 {(tipoUsuario === 'Organizador' || tipoUsuario === 'Administrador') && (
                     <>
                         <h2 className="fw-bold text-center my-4">📋 Equipos de la facultad</h2>
-                        {todosEquipos.length === 0
-                            ? <p className="text-center text-muted">No hay equipos registrados.</p>
-                            : <div className="row">{todosEquipos.map(renderEquipoCard)}</div>
-                        }
+                        {todosEquipos.length === 0 ? (
+                            <p className="text-center text-muted">No hay equipos registrados.</p>
+                        ) : (
+                            <div className="row">{todosEquipos.map(renderEquipoCard)}</div>
+                        )}
                     </>
                 )}
             </div>
